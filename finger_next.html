@@ -92,13 +92,19 @@
             color: #fff;
         }
 
-        #settings-button {
+        .top-right-button {
             position: absolute;
             top: 20px;
             right: 20px;
             font-size: 30px;
             cursor: pointer;
             z-index: 20;
+            color: #ccc;
+            text-decoration: none;
+        }
+
+        .top-right-button:hover {
+            color: #fff;
         }
 
         #settings-screen {
@@ -133,9 +139,9 @@
             box-sizing: border-box;
         }
 
-        #reset-settings-button {
+        #save-settings-button {
             margin-top: 20px;
-            background-color: #5c3c3c;
+            background-color: #3c5c3c;
         }
 
     </style>
@@ -143,13 +149,14 @@
 <body>
 
     <div id="mode-selection" class="screen">
-        <div id="settings-button">⚙️</div>
+        <a id="settings-button" class="top-right-button" href="#">⚙️</a>
         <div class="mode-button" data-mode="winners">Winners</div>
         <div class="mode-button" data-mode="groups">Groups</div>
     </div>
 
     <div id="game-screen" class="screen">
         <a id="back-button" class="top-left-button" href="#">&larr;</a>
+        <a id="reset-game-button" class="top-right-button" href="#">&#x21bb;</a>
         <div id="countdown"></div>
     </div>
 
@@ -164,7 +171,7 @@
             <label for="color-interval">Color Change Interval (ms)</label>
             <input type="number" id="color-interval" min="50" step="50">
         </div>
-        <div id="reset-settings-button" class="mode-button">Reset</div>
+        <div id="save-settings-button" class="mode-button">Save</div>
     </div>
 
     <script>
@@ -178,7 +185,8 @@
         const backButton = document.getElementById('back-button');
         const settingsButton = document.getElementById('settings-button');
         const settingsBackButton = document.getElementById('settings-back-button');
-        const resetSettingsButton = document.getElementById('reset-settings-button');
+        const saveSettingsButton = document.getElementById('save-settings-button');
+        const resetGameButton = document.getElementById('reset-game-button');
 
         // Game elements
         const countdownDisplay = document.getElementById('countdown');
@@ -195,7 +203,8 @@
         let gameActive = false;
 
         // Settings variables
-        const defaultSettings = { countdownDuration: 5, colorChangeInterval: 250 };
+        const SETTINGS_KEY = 'fingerFingerSettings';
+        const defaultSettings = { countdownDuration: 5, colorChangeInterval: 500 };
         let settings = { ...defaultSettings };
 
         const colors = ['#ff3860', '#ffdd57', '#48c774', '#3273dc', '#8a4d76', '#f14668', '#ffe08a', '#48c78e', '#3298dc', '#9a6088'];
@@ -212,7 +221,12 @@
         function startGame(mode) {
             gameMode = mode;
             showScreen(gameScreen);
+            resetAndRestartGame();
+        }
+
+        function resetAndRestartGame() {
             resetGameState();
+            clearInterval(countdownInterval);
             startCountdown();
         }
 
@@ -272,6 +286,9 @@
         }
 
         function handleTouchStart(e) {
+            if (e.target.closest('#back-button') || e.target.closest('#reset-game-button')) {
+                return;
+            }
             if (!gameActive) return;
             e.preventDefault();
 
@@ -294,6 +311,9 @@
         }
 
         function handleTouchMove(e) {
+            if (e.target.closest('#back-button') || e.target.closest('#reset-game-button')) {
+                return;
+            }
             if (!gameActive) return;
             e.preventDefault();
 
@@ -309,6 +329,9 @@
         }
 
         function handleTouchEnd(e) {
+            if (e.target.closest('#back-button') || e.target.closest('#reset-game-button')) {
+                return;
+            }
             if (!gameActive) return;
             e.preventDefault();
             for (const touch of e.changedTouches) {
@@ -329,7 +352,25 @@
             }
         }
 
-        function applyAndSaveSettings() {
+        function saveSettings() {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        }
+
+        function loadSettings() {
+            const savedSettings = localStorage.getItem(SETTINGS_KEY);
+            if (savedSettings) {
+                try {
+                    settings = { ...defaultSettings, ...JSON.parse(savedSettings) };
+                } catch (e) {
+                    settings = { ...defaultSettings };
+                }
+            } else {
+                settings = { ...defaultSettings };
+            }
+            updateSettingsInputs();
+        }
+
+        function updateSettingsFromInputs() {
             const newCountdown = parseInt(countdownDurationInput.value, 10);
             const newInterval = parseInt(colorIntervalInput.value, 10);
             if (!isNaN(newCountdown) && newCountdown > 0) {
@@ -357,6 +398,11 @@
             showScreen(modeSelectionScreen);
         });
 
+        resetGameButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            resetAndRestartGame();
+        });
+
         settingsButton.addEventListener('click', () => {
             updateSettingsInputs();
             showScreen(settingsScreen);
@@ -364,13 +410,15 @@
 
         settingsBackButton.addEventListener('click', (e) => {
             e.preventDefault();
-            applyAndSaveSettings();
+            // Don't save, just go back. Revert inputs to saved settings.
+            updateSettingsInputs();
             showScreen(modeSelectionScreen);
         });
 
-        resetSettingsButton.addEventListener('click', () => {
-            settings = { ...defaultSettings };
-            updateSettingsInputs();
+        saveSettingsButton.addEventListener('click', () => {
+            updateSettingsFromInputs();
+            saveSettings();
+            showScreen(modeSelectionScreen);
         });
 
         gameScreen.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -379,7 +427,7 @@
         gameScreen.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
         // Initial setup
-        updateSettingsInputs();
+        loadSettings();
         showScreen(modeSelectionScreen);
     </script>
 </body>
