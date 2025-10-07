@@ -76,6 +76,13 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: bold;
+            color: rgba(0, 0, 0, 0.75);
+            text-shadow: 0px 0px 5px rgba(255, 255, 255, 0.7);
         }
 
         .top-left-button {
@@ -152,6 +159,7 @@
         <a id="settings-button" class="top-right-button" href="#">⚙️</a>
         <div class="mode-button" data-mode="winners">Winners</div>
         <div class="mode-button" data-mode="groups">Groups</div>
+        <div class="mode-button" data-mode="numbers">Numbers</div>
     </div>
 
     <div id="game-screen" class="screen">
@@ -281,6 +289,10 @@
                 
                 shuffledCircles.forEach((touchData, index) => {
                     touchData.element.style.backgroundColor = index < group1Size ? 'green' : 'red';
+                });
+            } else if (gameMode === 'numbers') {
+                remainingCircles.forEach((touchData, index) => {
+                    touchData.element.textContent = index + 1;
                 });
             }
         }
