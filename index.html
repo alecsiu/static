@@ -151,7 +151,8 @@
         function startCountdown() {
             let count = 5;
             countdownDisplay.textContent = count;
-            
+            gameActive = true;
+
             countdownInterval = setInterval(() => {
                 count--;
                 if (count > 0) {
@@ -162,10 +163,6 @@
                     endGame();
                 }
             }, 1000);
-            
-            setTimeout(() => {
-                gameActive = true;
-            }, 500); // Small delay to prevent immediate touches before countdown is visible
         }
 
         function endGame() {
@@ -201,8 +198,8 @@
         }
 
         function handleTouchStart(e) {
-            e.preventDefault();
             if (!gameActive) return;
+            e.preventDefault();
 
             for (const touch of e.changedTouches) {
                 const circle = document.createElement('div');
@@ -223,8 +220,8 @@
         }
 
         function handleTouchMove(e) {
-            e.preventDefault();
             if (!gameActive) return;
+            e.preventDefault();
 
             for (const touch of e.changedTouches) {
                 const identifier = touch.identifier;
@@ -238,9 +235,8 @@
         }
 
         function handleTouchEnd(e) {
+            if (!gameActive) return;
             e.preventDefault();
-            // Don't remove touches if the game has ended, so they can be evaluated
-            if (!gameActive && countdownDisplay.textContent === '') return;
 
             for (const touch of e.changedTouches) {
                 removeTouch(touch.identifier);
