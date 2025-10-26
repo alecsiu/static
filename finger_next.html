@@ -77,12 +77,58 @@
             z-index: 10;
             color: #ffffff;
             display: none;
+            text-align: center;
+            width: 100%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        #title-text-bottom {
+            font-size: 48px;
+            font-weight: bold;
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) rotate(180deg);
+            z-index: 10;
+            color: #ffffff;
+            display: none;
+            text-align: center;
+            width: 100%;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translateX(-50%) scale(1);
+            }
+            50% {
+                transform: translateX(-50%) scale(1.2);
+            }
+            100% {
+                transform: translateX(-50%) scale(1);
+            }
+        }
+
+        #title-text-bottom {
+            animation: pulse-bottom 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-bottom {
+            0% {
+                transform: translateX(-50%) rotate(180deg) scale(1);
+            }
+            50% {
+                transform: translateX(-50%) rotate(180deg) scale(1.2);
+            }
+            100% {
+                transform: translateX(-50%) rotate(180deg) scale(1);
+            }
         }
 
         .touch-circle {
             position: absolute;
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             background-color: #fff;
             transform: translate(-50%, -50%);
@@ -178,6 +224,7 @@
         <a id="back-button" class="top-left-button" href="#">&larr;</a>
         <a id="reset-game-button" class="top-right-button" href="#">&#x21bb;</a>
         <div id="title-text">Finger me now</div>
+        <div id="title-text-bottom">Finger me now</div>
         <div id="countdown"></div>
     </div>
 
@@ -212,6 +259,7 @@
         // Game elements
         const countdownDisplay = document.getElementById('countdown');
         const titleText = document.getElementById('title-text');
+        const titleTextBottom = document.getElementById('title-text-bottom');
 
         // Settings inputs
         const countdownDurationInput = document.getElementById('countdown-duration');
@@ -256,6 +304,7 @@
             gameActive = false;
             countdownDisplay.textContent = '';
             titleText.style.display = 'none';
+            titleTextBottom.style.display = 'none';
             activeTouches.forEach((_, identifier) => removeTouch(identifier));
             activeTouches.clear();
             colorIntervals.forEach(interval => clearInterval(interval));
@@ -267,6 +316,7 @@
             let count = settings.countdownDuration;
             countdownDisplay.textContent = count;
             titleText.style.display = 'block';
+            titleTextBottom.style.display = 'block';
             gameActive = true;
 
             countdownInterval = setInterval(() => {
@@ -284,6 +334,7 @@
         function endGame() {
             gameActive = false;
             titleText.style.display = 'none';
+            titleTextBottom.style.display = 'none';
             const remainingCircles = Array.from(activeTouches.values());
             colorIntervals.forEach(interval => clearInterval(interval));
             colorIntervals.clear();
@@ -295,7 +346,7 @@
                 remainingCircles.forEach((touchData, index) => {
                     if (index === winnerIndex) {
                         touchData.element.style.backgroundColor = 'green';
-                        touchData.element.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                        touchData.element.style.transform = 'translate(-50%, -50%) scale(1.2)';
                     } else {
                         touchData.element.remove();
                     }
