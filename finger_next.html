@@ -306,7 +306,7 @@
 
         // Settings variables
         const SETTINGS_KEY = 'fingerFingerSettings';
-        const defaultSettings = { countdownDuration: 5, colorChangeInterval: 500 };
+        const defaultSettings = { countdownDuration: 10, colorChangeInterval: 500 };
         let settings = { ...defaultSettings };
 
         const colors = ['#ff3860', '#ffdd57', '#48c774', '#3273dc', '#8a4d76', '#f14668', '#ffe08a', '#48c78e', '#3298dc', '#9a6088'];
@@ -488,6 +488,7 @@
             gameActive = false;
             titleText.style.display = 'none';
             titleTextBottom.style.display = 'none';
+            stopMovingFinger();
             const remainingCircles = Array.from(activeTouches.values());
             colorIntervals.forEach(interval => clearInterval(interval));
             colorIntervals.clear();
