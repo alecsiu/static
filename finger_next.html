@@ -67,6 +67,18 @@
             opacity: 0.7;
         }
 
+        #title-text {
+            font-size: 48px;
+            font-weight: bold;
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            color: #ffffff;
+            display: none;
+        }
+
         .touch-circle {
             position: absolute;
             width: 80px;
@@ -165,6 +177,7 @@
     <div id="game-screen" class="screen">
         <a id="back-button" class="top-left-button" href="#">&larr;</a>
         <a id="reset-game-button" class="top-right-button" href="#">&#x21bb;</a>
+        <div id="title-text">Finger me now</div>
         <div id="countdown"></div>
     </div>
 
@@ -198,6 +211,7 @@
 
         // Game elements
         const countdownDisplay = document.getElementById('countdown');
+        const titleText = document.getElementById('title-text');
 
         // Settings inputs
         const countdownDurationInput = document.getElementById('countdown-duration');
@@ -241,6 +255,7 @@
         function resetGameState() {
             gameActive = false;
             countdownDisplay.textContent = '';
+            titleText.style.display = 'none';
             activeTouches.forEach((_, identifier) => removeTouch(identifier));
             activeTouches.clear();
             colorIntervals.forEach(interval => clearInterval(interval));
@@ -251,6 +266,7 @@
         function startCountdown() {
             let count = settings.countdownDuration;
             countdownDisplay.textContent = count;
+            titleText.style.display = 'block';
             gameActive = true;
 
             countdownInterval = setInterval(() => {
@@ -267,6 +283,7 @@
 
         function endGame() {
             gameActive = false;
+            titleText.style.display = 'none';
             const remainingCircles = Array.from(activeTouches.values());
             colorIntervals.forEach(interval => clearInterval(interval));
             colorIntervals.clear();
