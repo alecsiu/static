@@ -125,6 +125,22 @@
             }
         }
 
+        #moving-finger {
+            position: absolute;
+            font-size: 100px;
+            display: none;
+            pointer-events: none;
+            z-index: 8;
+        }
+
+        #moving-finger-2 {
+            position: absolute;
+            font-size: 100px;
+            display: none;
+            pointer-events: none;
+            z-index: 8;
+        }
+
         .touch-circle {
             position: absolute;
             width: 100px;
@@ -226,6 +242,8 @@
         <div id="title-text">Finger me now</div>
         <div id="title-text-bottom">Finger me now</div>
         <div id="countdown"></div>
+        <div id="moving-finger">👆</div>
+        <div id="moving-finger-2">👆</div>
     </div>
 
     <div id="settings-screen" class="screen">
@@ -260,6 +278,8 @@
         const countdownDisplay = document.getElementById('countdown');
         const titleText = document.getElementById('title-text');
         const titleTextBottom = document.getElementById('title-text-bottom');
+        const movingFinger = document.getElementById('moving-finger');
+        const movingFinger2 = document.getElementById('moving-finger-2');
 
         // Settings inputs
         const countdownDurationInput = document.getElementById('countdown-duration');
@@ -271,6 +291,18 @@
         let activeTouches = new Map();
         let colorIntervals = new Map();
         let gameActive = false;
+        let fingerAnimationId;
+        let fingerX = 0;
+        let fingerY = 0;
+        let fingerVelX = 0;
+        let fingerVelY = 0;
+        let fingerAnimationId2;
+        let fingerX2 = 0;
+        let fingerY2 = 0;
+        let fingerVelX2 = 0;
+        let fingerVelY2 = 0;
+        const FINGER_SIZE = 100;
+        const FINGER_SPEED = 200; // pixels per second
 
         // Settings variables
         const SETTINGS_KEY = 'fingerFingerSettings';
@@ -281,6 +313,125 @@
 
         function getRandomColor() {
             return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function startMovingFinger() {
+            // Finger 1
+            const margin = FINGER_SIZE;
+            fingerX = Math.random() * (window.innerWidth - margin) + margin / 2;
+            fingerY = Math.random() * (window.innerHeight - margin) + margin / 2;
+
+            const angle = Math.random() * Math.PI * 2;
+            fingerVelX = Math.cos(angle) * FINGER_SPEED;
+            fingerVelY = Math.sin(angle) * FINGER_SPEED;
+
+            // Finger 2
+            fingerX2 = Math.random() * (window.innerWidth - margin) + margin / 2;
+            fingerY2 = Math.random() * (window.innerHeight - margin) + margin / 2;
+
+            const angle2 = Math.random() * Math.PI * 2;
+            fingerVelX2 = Math.cos(angle2) * FINGER_SPEED;
+            fingerVelY2 = Math.sin(angle2) * FINGER_SPEED;
+
+            movingFinger.style.display = 'block';
+            movingFinger2.style.display = 'block';
+            animateMovingFinger();
+            animateMovingFinger2();
+        }
+
+        function animateMovingFinger() {
+            const now = performance.now();
+            let lastTime = now;
+
+            function update() {
+                const currentTime = performance.now();
+                const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+                lastTime = currentTime;
+
+                // Update position
+                fingerX += fingerVelX * deltaTime;
+                fingerY += fingerVelY * deltaTime;
+
+                // Check boundaries and reflect (mirror behavior)
+                if (fingerX - FINGER_SIZE / 2 < 0 || fingerX + FINGER_SIZE / 2 > window.innerWidth) {
+                    fingerVelX *= -1;
+                    fingerX = Math.max(FINGER_SIZE / 2, Math.min(window.innerWidth - FINGER_SIZE / 2, fingerX));
+                }
+
+                if (fingerY - FINGER_SIZE / 2 < 0 || fingerY + FINGER_SIZE / 2 > window.innerHeight) {
+                    fingerVelY *= -1;
+                    fingerY = Math.max(FINGER_SIZE / 2, Math.min(window.innerHeight - FINGER_SIZE / 2, fingerY));
+                }
+
+                // Calculate rotation angle based on velocity direction
+                const angle = Math.atan2(fingerVelY, fingerVelX) * (180 / Math.PI);
+                // Add 90 degrees because emoji points up (0 degrees is right)
+                const rotationAngle = angle + 90;
+
+                // Update position and rotation
+                movingFinger.style.left = fingerX + 'px';
+                movingFinger.style.top = fingerY + 'px';
+                movingFinger.style.transform = `translate(-50%, -50%) rotate(${rotationAngle}deg)`;
+
+                if (gameActive) {
+                    fingerAnimationId = requestAnimationFrame(update);
+                }
+            }
+
+            fingerAnimationId = requestAnimationFrame(update);
+        }
+
+        function animateMovingFinger2() {
+            const now = performance.now();
+            let lastTime = now;
+
+            function update() {
+                const currentTime = performance.now();
+                const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+                lastTime = currentTime;
+
+                // Update position
+                fingerX2 += fingerVelX2 * deltaTime;
+                fingerY2 += fingerVelY2 * deltaTime;
+
+                // Check boundaries and reflect (mirror behavior)
+                if (fingerX2 - FINGER_SIZE / 2 < 0 || fingerX2 + FINGER_SIZE / 2 > window.innerWidth) {
+                    fingerVelX2 *= -1;
+                    fingerX2 = Math.max(FINGER_SIZE / 2, Math.min(window.innerWidth - FINGER_SIZE / 2, fingerX2));
+                }
+
+                if (fingerY2 - FINGER_SIZE / 2 < 0 || fingerY2 + FINGER_SIZE / 2 > window.innerHeight) {
+                    fingerVelY2 *= -1;
+                    fingerY2 = Math.max(FINGER_SIZE / 2, Math.min(window.innerHeight - FINGER_SIZE / 2, fingerY2));
+                }
+
+                // Calculate rotation angle based on velocity direction
+                const angle = Math.atan2(fingerVelY2, fingerVelX2) * (180 / Math.PI);
+                // Add 90 degrees because emoji points up (0 degrees is right)
+                const rotationAngle = angle + 90;
+
+                // Update position and rotation
+                movingFinger2.style.left = fingerX2 + 'px';
+                movingFinger2.style.top = fingerY2 + 'px';
+                movingFinger2.style.transform = `translate(-50%, -50%) rotate(${rotationAngle}deg)`;
+
+                if (gameActive) {
+                    fingerAnimationId2 = requestAnimationFrame(update);
+                }
+            }
+
+            fingerAnimationId2 = requestAnimationFrame(update);
+        }
+
+        function stopMovingFinger() {
+            if (fingerAnimationId) {
+                cancelAnimationFrame(fingerAnimationId);
+            }
+            if (fingerAnimationId2) {
+                cancelAnimationFrame(fingerAnimationId2);
+            }
+            movingFinger.style.display = 'none';
+            movingFinger2.style.display = 'none';
         }
 
         function showScreen(screen) {
@@ -305,6 +456,7 @@
             countdownDisplay.textContent = '';
             titleText.style.display = 'none';
             titleTextBottom.style.display = 'none';
+            stopMovingFinger();
             activeTouches.forEach((_, identifier) => removeTouch(identifier));
             activeTouches.clear();
             colorIntervals.forEach(interval => clearInterval(interval));
@@ -318,6 +470,7 @@
             titleText.style.display = 'block';
             titleTextBottom.style.display = 'block';
             gameActive = true;
+            startMovingFinger();
 
             countdownInterval = setInterval(() => {
                 count--;
