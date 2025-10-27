@@ -2,282 +2,186 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Finger Finger</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Index</title>
     <style>
-        body, html {
+        * {
             margin: 0;
             padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-        }
-
-        .screen {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
             box-sizing: border-box;
         }
 
-        #mode-selection {
-            padding: 20px;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
         }
 
-        .mode-button {
-            background-color: #333;
-            color: white;
-            border: 2px solid #555;
-            border-radius: 15px;
-            padding: 20px 40px;
-            font-size: 24px;
-            cursor: pointer;
-            margin: 20px;
-            transition: background-color 0.3s, transform 0.1s;
-            width: 200px;
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
             text-align: center;
+            margin-bottom: 50px;
+            color: white;
         }
 
-        .mode-button:hover, .mode-button:active {
-            background-color: #444;
-            transform: scale(1.05);
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -1px;
         }
 
-        #game-screen {
-            display: none;
-            position: relative;
+        .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+            font-weight: 300;
         }
 
-        #countdown {
-            font-size: 150px;
-            font-weight: bold;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
-            opacity: 0.7;
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
         }
 
-        .touch-circle {
-            position: absolute;
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background-color: #fff;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            z-index: 5;
-        }
-
-        #back-button {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            font-size: 30px;
-            cursor: pointer;
-            z-index: 20;
-            color: #ccc;
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        #back-button:hover {
-            color: #fff;
+
+        .project-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .project-emoji {
+            font-size: 48px;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+
+        .project-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #333;
+        }
+
+        .project-description {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.6;
+            flex-grow: 1;
+            margin-bottom: 20px;
+        }
+
+        .project-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #667eea;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            align-self: flex-start;
+        }
+
+        .project-link:hover {
+            color: #764ba2;
+            gap: 12px;
+        }
+
+        .project-link::after {
+            content: '→';
+            transition: transform 0.2s;
+        }
+
+        .project-link:hover::after {
+            transform: translateX(4px);
+        }
+
+        footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            font-size: 14px;
+            margin-top: 60px;
+            padding-top: 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 32px;
+            }
+
+            .subtitle {
+                font-size: 16px;
+            }
+
+            header {
+                margin-bottom: 40px;
+            }
+
+            .project-card {
+                padding: 24px;
+            }
+
+            .project-emoji {
+                font-size: 40px;
+            }
+
+            .project-title {
+                font-size: 20px;
+            }
+
+            .project-description {
+                font-size: 15px;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>Welcome</h1>
+            <p class="subtitle">A collection of interactive web applications</p>
+        </header>
 
-    <div id="mode-selection" class="screen">
-        <div class="mode-button" data-mode="winners">Winners</div>
-        <div class="mode-button" data-mode="groups">Groups</div>
+        <div class="projects-grid">
+            <a href="finger_next.html" class="project-card">
+                <div class="project-emoji">👆</div>
+                <h2 class="project-title">Finger Finger</h2>
+                <p class="project-description">An interactive touch-based game with multiple modes including Winners selection, group division, and numbered ranking. Features customizable countdown timer and color change intervals with local storage settings.</p>
+                <span class="project-link">Play Now</span>
+            </a>
+
+            <a href="fx.html" class="project-card">
+                <div class="project-emoji">💱</div>
+                <h2 class="project-title">Currency Converter</h2>
+                <p class="project-description">A real-time currency converter with support for 150+ currencies, caching, and conversion history. Fetches live exchange rates and maintains a receipt of recent conversions with local storage persistence.</p>
+                <span class="project-link">Convert</span>
+            </a>
+        </div>
+
+        <footer>
+            <p>Built with HTML, CSS, and JavaScript</p>
+        </footer>
     </div>
-
-    <div id="game-screen" class="screen">
-        <a id="back-button" href="#">&larr;</a>
-        <div id="countdown"></div>
-    </div>
-
-    <script>
-        const modeSelectionScreen = document.getElementById('mode-selection');
-        const gameScreen = document.getElementById('game-screen');
-        const countdownDisplay = document.getElementById('countdown');
-        const backButton = document.getElementById('back-button');
-        const modeButtons = document.querySelectorAll('.mode-button');
-
-        let gameMode = '';
-        let countdownInterval;
-        let activeTouches = new Map();
-        let colorIntervals = new Map();
-        let gameActive = false;
-
-        const colors = ['#ff3860', '#ffdd57', '#48c774', '#3273dc', '#8a4d76', '#f14668', '#ffe08a', '#48c78e', '#3298dc', '#9a6088'];
-
-        function getRandomColor() {
-            return colors[Math.floor(Math.random() * colors.length)];
-        }
-
-        function showScreen(screen) {
-            modeSelectionScreen.style.display = 'none';
-            gameScreen.style.display = 'none';
-            screen.style.display = 'flex';
-        }
-
-        function startGame(mode) {
-            gameMode = mode;
-            showScreen(gameScreen);
-            resetGameState();
-            startCountdown();
-        }
-
-        function resetGameState() {
-            gameActive = false;
-            countdownDisplay.textContent = '';
-            activeTouches.forEach((touchData, identifier) => {
-                removeTouch(identifier);
-            });
-            activeTouches.clear();
-            colorIntervals.forEach(interval => clearInterval(interval));
-            colorIntervals.clear();
-            const circles = document.querySelectorAll('.touch-circle');
-            circles.forEach(c => c.remove());
-        }
-
-        function startCountdown() {
-            let count = 5;
-            countdownDisplay.textContent = count;
-            gameActive = true;
-
-            countdownInterval = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    countdownDisplay.textContent = count;
-                } else {
-                    clearInterval(countdownInterval);
-                    countdownDisplay.textContent = '';
-                    endGame();
-                }
-            }, 1000);
-        }
-
-        function endGame() {
-            gameActive = false;
-            const remainingCircles = Array.from(activeTouches.values());
-            colorIntervals.forEach(interval => clearInterval(interval));
-            colorIntervals.clear();
-
-            if (remainingCircles.length === 0) return;
-
-            if (gameMode === 'winners') {
-                const winnerIndex = Math.floor(Math.random() * remainingCircles.length);
-                remainingCircles.forEach((touchData, index) => {
-                    if (index === winnerIndex) {
-                        touchData.element.style.backgroundColor = 'green';
-                        touchData.element.style.transform = 'translate(-50%, -50%) scale(1.5)';
-                    } else {
-                        touchData.element.remove();
-                    }
-                });
-            } else if (gameMode === 'groups') {
-                const shuffledCircles = remainingCircles.sort(() => 0.5 - Math.random());
-                const group1Size = Math.ceil(shuffledCircles.length / 2);
-                
-                shuffledCircles.forEach((touchData, index) => {
-                    if (index < group1Size) {
-                        touchData.element.style.backgroundColor = 'green';
-                    } else {
-                        touchData.element.style.backgroundColor = 'red';
-                    }
-                });
-            }
-        }
-
-        function handleTouchStart(e) {
-            if (!gameActive) return;
-            e.preventDefault();
-
-            for (const touch of e.changedTouches) {
-                const circle = document.createElement('div');
-                circle.className = 'touch-circle';
-                circle.style.left = `${touch.pageX}px`;
-                circle.style.top = `${touch.pageY}px`;
-                circle.style.backgroundColor = getRandomColor();
-                gameScreen.appendChild(circle);
-
-                const identifier = touch.identifier;
-                activeTouches.set(identifier, { element: circle, touch: touch });
-
-                const colorInterval = setInterval(() => {
-                    circle.style.backgroundColor = getRandomColor();
-                }, 200);
-                colorIntervals.set(identifier, colorInterval);
-            }
-        }
-
-        function handleTouchMove(e) {
-            if (!gameActive) return;
-            e.preventDefault();
-
-            for (const touch of e.changedTouches) {
-                const identifier = touch.identifier;
-                const touchData = activeTouches.get(identifier);
-                if (touchData) {
-                    touchData.element.style.left = `${touch.pageX}px`;
-                    touchData.element.style.top = `${touch.pageY}px`;
-                    touchData.touch = touch;
-                }
-            }
-        }
-
-        function handleTouchEnd(e) {
-            if (!gameActive) return;
-            e.preventDefault();
-
-            for (const touch of e.changedTouches) {
-                removeTouch(touch.identifier);
-            }
-        }
-        
-        function removeTouch(identifier) {
-            const touchData = activeTouches.get(identifier);
-            if (touchData) {
-                touchData.element.remove();
-                activeTouches.delete(identifier);
-            }
-            const colorInterval = colorIntervals.get(identifier);
-            if (colorInterval) {
-                clearInterval(colorInterval);
-                colorIntervals.delete(identifier);
-            }
-        }
-
-
-        // Event Listeners
-        modeButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                startGame(button.dataset.mode);
-            });
-        });
-
-        backButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            resetGameState();
-            clearInterval(countdownInterval);
-            showScreen(modeSelectionScreen);
-        });
-
-        gameScreen.addEventListener('touchstart', handleTouchStart, { passive: false });
-        gameScreen.addEventListener('touchmove', handleTouchMove, { passive: false });
-        gameScreen.addEventListener('touchend', handleTouchEnd, { passive: false });
-        gameScreen.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-
-        // Initial setup
-        showScreen(modeSelectionScreen);
-    </script>
 </body>
 </html>
