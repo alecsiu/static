@@ -356,12 +356,24 @@
         }
 
         /* Row 5: Results */
+        .results-section {
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .results-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
         .results-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 12px;
-            padding-top: 20px;
-            border-top: 2px solid #f0f0f0;
         }
 
         .result-box {
@@ -383,6 +395,15 @@
             color: #333;
             font-size: 18px;
             word-break: break-word;
+            cursor: pointer;
+            transition: color 0.2s, background-color 0.2s;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .result-value:hover {
+            color: #667eea;
+            background-color: rgba(102, 126, 234, 0.1);
         }
 
         .result-currency {
@@ -653,9 +674,12 @@
             </div>
 
             <!-- Row 5: Results -->
-            <div class="results-row">
-                <div id="result0" class="result-box"></div>
-                <div id="result1" class="result-box"></div>
+            <div class="results-section">
+                <div class="results-title">Tap Amount to Copy to Clipboard</div>
+                <div class="results-row">
+                    <div id="result0" class="result-box"></div>
+                    <div id="result1" class="result-box"></div>
+                </div>
             </div>
 
             <!-- Receipt Section -->
@@ -1298,12 +1322,40 @@
                     <span class="result-currency">${cur1}</span>
                 `;
 
+                // Add click handlers to copy amounts
+                const value0Elem = result0.querySelector('.result-value');
+                const value1Elem = result1.querySelector('.result-value');
+
+                value0Elem.addEventListener('click', () => this.copyAmountToClipboard(val0));
+                value1Elem.addEventListener('click', () => this.copyAmountToClipboard(val1));
+
                 // Add to conversion history and update receipt
                 this.addConversionToHistory(val0, cur0, val1, cur1);
                 this.renderReceipt();
 
                 // Update hash with the conversion
                 this.updateHashAfterConversion(val0, cur0, val1, cur1);
+            }
+
+            copyAmountToClipboard(amount) {
+                // Format without commas: just decimal point
+                const formattedAmount = amount.toFixed(2);
+
+                navigator.clipboard.writeText(formattedAmount).then(() => {
+                    // Visual feedback - change text temporarily
+                    const resultValues = document.querySelectorAll('.result-value');
+                    resultValues.forEach(elem => {
+                        elem.style.opacity = '0.6';
+                    });
+
+                    setTimeout(() => {
+                        resultValues.forEach(elem => {
+                            elem.style.opacity = '1';
+                        });
+                    }, 200);
+                }).catch(err => {
+                    console.error('Failed to copy amount:', err);
+                });
             }
 
             clearResults() {
