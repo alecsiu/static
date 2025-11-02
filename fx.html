@@ -63,7 +63,8 @@
 
         /* Row 1: Amount input and label */
         .amount-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr auto 2fr;
             gap: 12px;
             align-items: center;
             margin-bottom: 20px;
@@ -92,26 +93,17 @@
         }
 
         .currency-label {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: white;
+            color: #333;
             padding: 12px 18px;
             border-radius: 8px;
             font-weight: 700;
             font-size: 16px;
             min-width: 70px;
             text-align: center;
-            border: none;
-            cursor: pointer;
+            border: 2px solid #e0e0e0;
+            cursor: default;
             transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-        }
-
-        .currency-label:hover {
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
-        }
-
-        .currency-label:active {
-            transform: scale(0.98);
         }
 
         /* Ripple effect for currency label button */
@@ -135,13 +127,13 @@
 
         /* Row 2: Buttons */
         .buttons-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 12px;
             margin-bottom: 20px;
         }
 
         .btn {
-            flex: 1;
             padding: 14px;
             border: none;
             border-radius: 8px;
@@ -168,6 +160,36 @@
         }
 
         .btn-clear:active {
+            transform: scale(0.98);
+        }
+
+        .btn-share {
+            background: #f5f5f5;
+            color: #666;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-share:hover {
+            background: #efefef;
+            border-color: #d0d0d0;
+        }
+
+        .btn-share:active {
+            transform: scale(0.98);
+        }
+
+        .btn-swap {
+            background: #f5f5f5;
+            color: #666;
+            border: 2px solid #e0e0e0;
+        }
+
+        .btn-swap:hover {
+            background: #efefef;
+            border-color: #d0d0d0;
+        }
+
+        .btn-swap:active {
             transform: scale(0.98);
         }
 
@@ -491,6 +513,7 @@
             }
 
             .amount-row {
+                grid-template-columns: 1fr auto 1fr;
                 gap: 8px;
                 margin-bottom: 16px;
             }
@@ -513,6 +536,7 @@
             }
 
             .buttons-row {
+                grid-template-columns: 1fr 1fr 1fr;
                 gap: 8px;
                 margin-bottom: 16px;
             }
@@ -593,16 +617,18 @@
         <div id="errorMessage"></div>
         <div id="loading" class="loading">Loading exchange rates...</div>
         <div id="converterCard" class="converter-card" style="display: none;">
-            <!-- Row 1: Amount input and label -->
+            <!-- Row 1: Amount input, label, and enter button -->
             <div class="amount-row">
                 <input type="number" id="amountInput" inputMode="decimal" placeholder="0.00" class="amount-input" step="0.01">
                 <button id="currencyLabel" class="currency-label" type="button">USD</button>
+                <button id="enterBtn" class="btn btn-enter">↩ Enter</button>
             </div>
 
-            <!-- Row 2: Buttons -->
+            <!-- Row 2: Buttons (Clear, Share, Swap) -->
             <div class="buttons-row">
                 <button id="clearBtn" class="btn btn-clear">🗑️ Clear</button>
-                <button id="enterBtn" class="btn btn-enter">↩ Enter</button>
+                <button id="shareBtn" class="btn btn-share">📤 Share</button>
+                <button id="swapBtn" class="btn btn-swap">🔄 Swap</button>
             </div>
 
             <!-- Row 3: Currency dropdowns -->
@@ -835,6 +861,8 @@
                     this.checkCacheAge();
                     document.getElementById('loading').style.display = 'none';
                     document.getElementById('converterCard').style.display = 'block';
+                    // Apply hash parameters if present in URL
+                    this.applyHashParameters();
                 } catch (error) {
                     this.showError('Failed to initialize currency converter');
                     console.error('Init error:', error);
@@ -891,7 +919,7 @@
                 if (this.cacheAge && this.cacheAge > CACHE_DURATION) {
                     const hours = Math.floor(this.cacheAge / (60 * 60 * 1000));
                     const warning = document.getElementById('cacheWarning');
-                    warning.innerHTML = `⚠️ Exchange rates are ${hours}+ hours old. Using cached rates. Please check your connection to refresh.`;
+                    warning.innerHTML = `⚠️ Exchange rates are ${hours}+ hours old. Using cached rates, refresh the page to get the latest.`;
                     warning.style.display = 'block';
                 }
             }
@@ -1047,10 +1075,95 @@
                 descriptor.textContent = CURRENCIES[currency] || '';
             }
 
+            getShareLink() {
+                const amountInput = document.getElementById('amountInput');
+                const currency0 = document.getElementById('currency0').value;
+                const currency1 = document.getElementById('currency1').value;
+                const amount = amountInput.value;
+
+                if (!amount || isNaN(parseFloat(amount))) {
+                    return null;
+                }
+
+                const hash = `#amount=${encodeURIComponent(amount)}&from=${currency0}&to=${currency1}`;
+                return window.location.href.split('#')[0] + hash;
+            }
+
+            copyShareLink() {
+                const link = this.getShareLink();
+                if (!link) {
+                    return;
+                }
+
+                navigator.clipboard.writeText(link).then(() => {
+                    // Visual feedback
+                    const shareBtn = document.getElementById('shareBtn');
+                    const originalText = shareBtn.textContent;
+                    shareBtn.textContent = '✓';
+                    setTimeout(() => {
+                        shareBtn.textContent = originalText;
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy link:', err);
+                });
+            }
+
+            parseHashParameters() {
+                const hash = window.location.hash.slice(1);
+                if (!hash) return null;
+
+                const params = new URLSearchParams(hash);
+                const amount = params.get('amount');
+                const from = params.get('from');
+                const to = params.get('to');
+
+                if (amount && from && to) {
+                    return { amount, from, to };
+                }
+                return null;
+            }
+
+            applyHashParameters() {
+                const params = this.parseHashParameters();
+                if (!params) return;
+
+                const amountInput = document.getElementById('amountInput');
+                const currency0 = document.getElementById('currency0');
+                const currency1 = document.getElementById('currency1');
+
+                // Set values - wait for options to be populated
+                setTimeout(() => {
+                    amountInput.value = params.amount;
+
+                    // Check if currencies exist in dropdowns
+                    const options0 = Array.from(currency0.options).map(o => o.value);
+                    const options1 = Array.from(currency1.options).map(o => o.value);
+
+                    if (options0.includes(params.from)) {
+                        currency0.value = params.from;
+                        this.updateDescriptor(0);
+                    }
+
+                    if (options1.includes(params.to)) {
+                        currency1.value = params.to;
+                        this.updateDescriptor(1);
+                    }
+
+                    // Trigger conversion
+                    this.convertCurrency();
+                }, 0);
+            }
+
+            updateHashAfterConversion(val0, cur0, val1, cur1) {
+                const hash = `#amount=${encodeURIComponent(val0)}&from=${cur0}&to=${cur1}`;
+                window.history.replaceState(null, '', hash);
+            }
+
             setupEventListeners() {
                 const amountInput = document.getElementById('amountInput');
                 const enterBtn = document.getElementById('enterBtn');
                 const clearBtn = document.getElementById('clearBtn');
+                const shareBtn = document.getElementById('shareBtn');
                 const currency0 = document.getElementById('currency0');
                 const currency1 = document.getElementById('currency1');
                 const currencyLabel = document.getElementById('currencyLabel');
@@ -1072,8 +1185,9 @@
                     localStorage.setItem(SELECTED_CURRENCY_1_KEY, newCurrency);
                 });
 
-                // Toggle currencies when label button is clicked
-                currencyLabel.addEventListener('click', () => {
+                // Swap currencies when swap button is clicked
+                const swapBtn = document.getElementById('swapBtn');
+                swapBtn.addEventListener('click', () => {
                     // Swap the selected currencies
                     const temp = currency0.value;
                     currency0.value = currency1.value;
@@ -1111,6 +1225,11 @@
                     amountInput.value = '';
                     this.clearResults();
                     amountInput.focus();
+                    window.history.replaceState(null, '', window.location.href.split('#')[0]);
+                });
+
+                shareBtn.addEventListener('click', () => {
+                    this.copyShareLink();
                 });
 
                 // Clear conversion history
@@ -1173,6 +1292,9 @@
                 // Add to conversion history and update receipt
                 this.addConversionToHistory(val0, cur0, val1, cur1);
                 this.renderReceipt();
+
+                // Update hash with the conversion
+                this.updateHashAfterConversion(val0, cur0, val1, cur1);
             }
 
             clearResults() {
