@@ -451,8 +451,21 @@
 
         .receipt-from {
             flex: 0 0 auto;
-            text-align: right;
+            display: flex;
+            gap: 4px;
+            align-items: baseline;
             min-width: 120px;
+        }
+
+        .receipt-amount-left {
+            text-align: right;
+            min-width: 85px;
+        }
+
+        .receipt-currency-left {
+            text-align: left;
+            width: 31px;
+            flex-shrink: 0;
         }
 
         .receipt-arrow {
@@ -463,8 +476,21 @@
 
         .receipt-to {
             flex: 0 0 auto;
-            text-align: right;
+            display: flex;
+            gap: 4px;
+            align-items: baseline;
             min-width: 120px;
+        }
+
+        .receipt-amount-right {
+            text-align: right;
+            min-width: 85px;
+        }
+
+        .receipt-currency-right {
+            text-align: left;
+            width: 31px;
+            flex-shrink: 0;
         }
 
         .receipt-empty {
@@ -615,7 +641,16 @@
 
             .receipt-from {
                 min-width: 90px;
+            }
+
+            .receipt-amount-left {
+                min-width: 65px;
                 font-size: 12px;
+            }
+
+            .receipt-currency-left {
+                font-size: 12px;
+                width: 25px;
             }
 
             .receipt-arrow {
@@ -624,7 +659,16 @@
 
             .receipt-to {
                 min-width: 90px;
+            }
+
+            .receipt-amount-right {
+                min-width: 65px;
                 font-size: 12px;
+            }
+
+            .receipt-currency-right {
+                font-size: 12px;
+                width: 25px;
             }
 
             .clear-history-btn {
@@ -1029,13 +1073,19 @@
                         return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     };
 
-                    const fromText = `${formatValue(conversion.fromAmount)} ${conversion.fromCurrency}`;
-                    const toText = `${formatValue(conversion.toAmount)} ${conversion.toCurrency}`;
+                    const fromAmount = formatValue(conversion.fromAmount);
+                    const toAmount = formatValue(conversion.toAmount);
 
                     line.innerHTML = `
-                        <div class="receipt-from">${fromText}</div>
+                        <div class="receipt-from">
+                            <span class="receipt-amount-left">${fromAmount}</span>
+                            <span class="receipt-currency-left">${conversion.fromCurrency}</span>
+                        </div>
                         <div class="receipt-arrow">⇒</div>
-                        <div class="receipt-to">${toText}</div>
+                        <div class="receipt-to">
+                            <span class="receipt-amount-right">${toAmount}</span>
+                            <span class="receipt-currency-right">${conversion.toCurrency}</span>
+                        </div>
                     `;
                     receiptContainer.appendChild(line);
                 });
