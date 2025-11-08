@@ -220,10 +220,6 @@
             box-sizing: border-box;
         }
 
-        #save-settings-button {
-            margin-top: 20px;
-            background-color: #3c5c3c;
-        }
 
     </style>
 </head>
@@ -257,7 +253,6 @@
             <label for="color-interval">Color Change Interval (ms)</label>
             <input type="number" id="color-interval" min="50" step="50">
         </div>
-        <div id="save-settings-button" class="mode-button">Save</div>
     </div>
 
     <script>
@@ -271,7 +266,6 @@
         const backButton = document.getElementById('back-button');
         const settingsButton = document.getElementById('settings-button');
         const settingsBackButton = document.getElementById('settings-back-button');
-        const saveSettingsButton = document.getElementById('save-settings-button');
         const resetGameButton = document.getElementById('reset-game-button');
 
         // Game elements
@@ -644,12 +638,7 @@
 
         settingsBackButton.addEventListener('click', (e) => {
             e.preventDefault();
-            // Don't save, just go back. Revert inputs to saved settings.
-            updateSettingsInputs();
-            showScreen(modeSelectionScreen);
-        });
-
-        saveSettingsButton.addEventListener('click', () => {
+            // Save settings when going back
             updateSettingsFromInputs();
             saveSettings();
             showScreen(modeSelectionScreen);
