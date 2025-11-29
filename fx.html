@@ -1150,6 +1150,9 @@
                 // Update descriptors for initial currencies
                 this.updateDescriptor(0);
                 this.updateDescriptor(1);
+
+                // Sync currency pill with initial 'from' currency
+                document.getElementById('currencySuffix').textContent = document.getElementById('currency0').value;
             }
 
             updateDescriptor(index) {
