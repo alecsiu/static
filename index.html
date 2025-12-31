@@ -23,30 +23,10 @@
             margin: 0 auto;
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 50px;
-            color: white;
-        }
-
-        h1 {
-            font-size: 48px;
-            font-weight: 700;
-            margin-bottom: 12px;
-            letter-spacing: -1px;
-        }
-
-        .subtitle {
-            font-size: 18px;
-            opacity: 0.9;
-            font-weight: 300;
-        }
-
         .projects-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 24px;
-            margin-bottom: 40px;
         }
 
         .project-card {
@@ -61,6 +41,7 @@
             flex-direction: column;
             height: 100%;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
         }
 
         .project-card:hover {
@@ -70,15 +51,28 @@
         }
 
         .project-emoji {
-            font-size: 48px;
-            margin-bottom: 16px;
+            font-size: 36px;
             display: inline-block;
         }
+
+        .project-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .project-title-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+        }
+
 
         .project-title {
             font-size: 24px;
             font-weight: 700;
-            margin-bottom: 12px;
             color: #333;
         }
 
@@ -90,29 +84,59 @@
             margin-bottom: 20px;
         }
 
-        .project-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            color: #667eea;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-            align-self: flex-start;
-        }
-
-        .project-link:hover {
-            color: #764ba2;
+        .project-links {
+            display: flex;
             gap: 12px;
+            align-self: stretch;
         }
 
-        .project-link::after {
-            content: '→';
-            transition: transform 0.2s;
+        .project-badge {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: rgba(102, 126, 234, 0.12);
+            color: #4b5bbd;
+            text-decoration: none;
+            transition: background 0.2s, color 0.2s;
+            flex: 1 1 0;
+            text-align: center;
         }
 
-        .project-link:hover::after {
-            transform: translateX(4px);
+        .project-badge--production {
+            background: rgba(46, 186, 113, 0.16);
+            color: #1b7b4a;
+        }
+
+        .project-badge--staging {
+            background: rgba(244, 162, 97, 0.2);
+            color: #9a4e14;
+        }
+
+        .project-badge--action {
+            background: rgba(102, 126, 234, 0.16);
+            color: #4b5bbd;
+        }
+
+        .project-badge:hover {
+            background: rgba(118, 75, 162, 0.15);
+            color: #764ba2;
+        }
+
+        .project-badge--production:hover {
+            background: rgba(46, 186, 113, 0.28);
+            color: #16643c;
+        }
+
+        .project-badge--staging:hover {
+            background: rgba(244, 162, 97, 0.32);
+            color: #7c3d10;
+        }
+
+        .project-badge--action:hover {
+            background: rgba(102, 126, 234, 0.26);
+            color: #3f4fb0;
         }
 
         footer {
@@ -126,24 +150,12 @@
         }
 
         @media (max-width: 640px) {
-            h1 {
-                font-size: 32px;
-            }
-
-            .subtitle {
-                font-size: 16px;
-            }
-
-            header {
-                margin-bottom: 40px;
-            }
-
             .project-card {
                 padding: 24px;
             }
 
             .project-emoji {
-                font-size: 40px;
+                font-size: 32px;
             }
 
             .project-title {
@@ -153,29 +165,53 @@
             .project-description {
                 font-size: 15px;
             }
+            
+            .project-header {
+                align-items: flex-start;
+            }
+
+            .project-title-wrap {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Welcome</h1>
-            <p class="subtitle">A collection of interactive web applications</p>
-        </header>
-
         <div class="projects-grid">
+            <div class="project-card" role="link" tabindex="0" onclick="window.location='https://cribbage.jamfactory.app'" onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); window.location='https://cribbage.jamfactory.app'; }">
+                <div class="project-header">
+                    <div class="project-emoji">🃏</div>
+                    <div class="project-title-wrap">
+                        <h2 class="project-title">Cribbage</h2>
+                    </div>
+                </div>
+                <p class="project-description">A polished cribbage experience with live gameplay and scoring, with both live and staging builds available.</p>
+                <div class="project-links">
+                    <a class="project-badge project-badge--production" href="https://cribbage.jamfactory.app" onclick="event.stopPropagation();">Production →</a>
+                    <a class="project-badge project-badge--staging" href="https://cribbage-staging.jamfactory.app" onclick="event.stopPropagation();">Staging →</a>
+                </div>
+            </div>
+
             <a href="finger_next.html" class="project-card">
-                <div class="project-emoji">👆</div>
-                <h2 class="project-title">Finger Finger</h2>
-                <p class="project-description">An interactive touch-based game with multiple modes including Winners selection, group division, and numbered ranking. Features customizable countdown timer and color change intervals with local storage settings.</p>
-                <span class="project-link">Play Now</span>
+                <div class="project-header">
+                    <div class="project-emoji">👆</div>
+                    <h2 class="project-title">Finger Finger</h2>
+                </div>
+                <p class="project-description">A quick game for choosing who goes first, splitting people into teams, or assigning each player a number.</p>
+                <span class="project-badge project-badge--action">Play Now →</span>
             </a>
 
             <a href="fx.html" class="project-card">
-                <div class="project-emoji">💱</div>
-                <h2 class="project-title">Currency Converter</h2>
-                <p class="project-description">A real-time currency converter with support for 150+ currencies, caching, and conversion history. Fetches live exchange rates and maintains a receipt of recent conversions with local storage persistence.</p>
-                <span class="project-link">Convert</span>
+                <div class="project-header">
+                    <div class="project-emoji">💱</div>
+                    <h2 class="project-title">Currency Converter</h2>
+                </div>
+                <p class="project-description">A simple converter for checking currency rates and tracking recent conversions.</p>
+                <span class="project-badge project-badge--action">Convert →</span>
             </a>
         </div>
 
