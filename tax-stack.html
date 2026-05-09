@@ -1,0 +1,1076 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Federal Tax-Stack Visualizer (2026)</title>
+<style>
+  :root {
+    --bg: #f7f7f8;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --text: #111827;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --shield: #9ca3af;
+    --target: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px; }
+  header { display: flex; flex-wrap: wrap; gap: 16px; align-items: baseline; justify-content: space-between; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  h3 { font-size: 13px; margin: 14px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .year { color: var(--muted); font-size: 13px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .toprow { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 12px 0 16px; }
+  .toprow .card { padding: 10px 14px; }
+  .toprow label { margin-right: 12px; font-size: 13px; }
+  .toprow input[type="radio"] { margin-right: 4px; vertical-align: middle; }
+
+  main {
+    display: grid;
+    grid-template-columns: minmax(280px, 360px) 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+  fieldset {
+    border: none;
+    padding: 0;
+    margin: 0 0 14px;
+  }
+  fieldset legend { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 6px; }
+  .field { display: grid; grid-template-columns: 1fr 110px; gap: 8px; align-items: center; margin: 4px 0; }
+  .field label { font-size: 13px; }
+  input[type="number"] {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: inherit;
+    text-align: right;
+    background: white;
+  }
+  input[type="number"]:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  .summary { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; }
+  .summary .row { display: contents; }
+  .summary .row > .lbl { color: var(--muted); padding: 3px 0; }
+  .summary .row > .val { font-variant-numeric: tabular-nums; padding: 3px 0; text-align: right; }
+  .summary .row.strong > .lbl,
+  .summary .row.strong > .val { font-weight: 600; color: var(--text); }
+  .summary .row.total > .lbl,
+  .summary .row.total > .val { font-weight: 700; border-top: 1px solid var(--border); padding-top: 6px; margin-top: 4px; }
+  .summary .row.gap > .val { color: #047857; }
+  .summary .row.gap.short > .val { color: #b91c1c; }
+
+  .right-col { display: flex; flex-direction: column; gap: 16px; }
+
+  .chart-wrap { display: flex; flex-direction: column; align-items: stretch; }
+  svg.chart { display: block; width: 100%; height: auto; max-height: 520px; }
+
+  .hint {
+    border-bottom: 1px dotted var(--muted);
+    cursor: help;
+    position: relative;
+  }
+  .hint:hover::after, .hint:focus::after {
+    content: attr(data-hint);
+    position: absolute;
+    bottom: 125%;
+    left: 0;
+    background: #1f2937;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: normal;
+    width: 240px;
+    z-index: 20;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  table.breakdown {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+  }
+  table.breakdown th, table.breakdown td {
+    text-align: right;
+    padding: 4px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.breakdown th:first-child, table.breakdown td:first-child { text-align: left; }
+  table.breakdown tfoot td { font-weight: 600; border-top: 2px solid var(--border); border-bottom: none; }
+
+  .breakdowns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .breakdowns { grid-template-columns: 1fr; } }
+
+  details.advanced { margin-top: 16px; }
+  details.advanced > summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+  .adv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 10px; }
+  @media (max-width: 700px) { .adv-grid { grid-template-columns: 1fr; } }
+  .adv-table { display: grid; grid-template-columns: 80px 1fr 1fr; gap: 4px 8px; align-items: center; font-size: 13px; }
+  .adv-table .head { font-size: 11px; text-transform: uppercase; color: var(--muted); }
+  .adv-table input { padding: 4px 6px; font-size: 13px; }
+  .reset-btn {
+    margin-top: 10px;
+    padding: 6px 12px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font: inherit;
+  }
+  .reset-btn:hover { background: #f3f4f6; }
+
+  footer {
+    margin: 24px 0 8px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  footer .tests { margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+  footer .tests.pass { color: #047857; }
+  footer .tests.fail { color: #b91c1c; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 12px; margin-top: 8px; }
+  .legend .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: middle; margin-right: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>Federal Tax-Stack Visualizer</h1>
+    <div class="year">2026 federal defaults</div>
+  </div>
+</header>
+
+<div class="toprow">
+  <div class="card">
+    <strong style="font-size:13px;">Filing status</strong>
+    <label><input type="radio" name="filing" value="single" checked> Single</label>
+    <label><input type="radio" name="filing" value="mfj"> Married Filing Jointly</label>
+  </div>
+  <div class="card">
+    <strong style="font-size:13px;">
+      <span class="hint" data-hint="Deductions reduce taxable income. The standard deduction is a flat amount; itemized lets you sum up specific deductible expenses.">Deduction</span>
+    </strong>
+    <label><input type="radio" name="deduction" value="standard"> Standard</label>
+    <label><input type="radio" name="deduction" value="itemized" checked> Itemized</label>
+  </div>
+</div>
+
+<main>
+  <section class="card" id="inputs-card">
+    <h2>Inputs</h2>
+    <form id="inputs">
+      <fieldset>
+        <legend><span class="hint" data-hint="Income taxed at regular (ordinary) rates: wages, rents, bond interest, IRA/401(k) distributions, short-term capital gains.">Ordinary income</span></legend>
+        <div class="field"><label for="i-rental">Rental income</label><input type="number" id="i-rental" step="100" /></div>
+        <div class="field"><label for="i-interest">Interest / Treasury / MMF</label><input type="number" id="i-interest" step="100" /></div>
+        <div class="field"><label for="i-stcg">Short-term capital gains</label><input type="number" id="i-stcg" step="100" /></div>
+        <div class="field"><label for="i-ira">IRA / 401(k) withdrawals</label><input type="number" id="i-ira" step="100" /></div>
+        <div class="field"><label for="i-other-ord">Other ordinary income</label><input type="number" id="i-other-ord" step="100" /></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Preferential income</legend>
+        <div class="field">
+          <label for="i-qd">
+            <span class="hint" data-hint="Dividends from most U.S. and many foreign stocks held long enough to qualify. Taxed at LTCG rates (0/15/20%) instead of ordinary rates.">Qualified dividends</span>
+          </label>
+          <input type="number" id="i-qd" step="100" />
+        </div>
+        <div class="field"><label for="i-ltcg">Long-term capital gains</label><input type="number" id="i-ltcg" step="100" /></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Non-taxable spending</legend>
+        <div class="field">
+          <label for="i-basis">
+            <span class="hint" data-hint="Money you can spend without owing tax: cash on hand, the cost basis you recover when selling investments, returns of Roth contributions, etc.">Cash / basis / Roth basis</span>
+          </label>
+          <input type="number" id="i-basis" step="100" />
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Itemized deduction</legend>
+        <div class="field"><label for="i-itemized">Itemized amount</label><input type="number" id="i-itemized" step="100" /></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Target</legend>
+        <div class="field"><label for="i-target">Target spending</label><input type="number" id="i-target" step="1000" /></div>
+      </fieldset>
+    </form>
+  </section>
+
+  <section class="right-col">
+    <div class="card chart-wrap">
+      <h2>Tax stack</h2>
+      <svg class="chart" id="chart" viewBox="0 0 720 480" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Tax stack visualization"></svg>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="card">
+      <h2>Summary</h2>
+      <div class="summary" id="summary"></div>
+    </div>
+  </section>
+</main>
+
+<div class="card" style="margin-top:16px;">
+  <h2>Breakdown</h2>
+  <div class="breakdowns">
+    <div>
+      <h3>Ordinary income by bracket</h3>
+      <table class="breakdown" id="ord-table"><thead>
+        <tr><th>Rate</th><th>Range</th><th>Income</th><th>Tax</th></tr>
+      </thead><tbody></tbody><tfoot></tfoot></table>
+    </div>
+    <div>
+      <h3>Preferential income by band</h3>
+      <table class="breakdown" id="pref-table"><thead>
+        <tr><th>Rate</th><th>Range (stacked)</th><th>Income</th><th>Tax</th></tr>
+      </thead><tbody></tbody><tfoot></tfoot></table>
+    </div>
+  </div>
+</div>
+
+<details class="advanced card">
+  <summary>Advanced settings — edit brackets &amp; standard deductions</summary>
+  <div id="advanced-body">
+    <div class="adv-grid">
+      <div>
+        <h3>Standard deductions</h3>
+        <div class="adv-table">
+          <div class="head">Status</div><div class="head">Amount</div><div></div>
+          <div>Single</div><div><input type="number" id="adv-std-single" step="100" /></div><div></div>
+          <div>MFJ</div><div><input type="number" id="adv-std-mfj" step="100" /></div><div></div>
+        </div>
+      </div>
+      <div></div>
+    </div>
+    <div class="adv-grid">
+      <div>
+        <h3>Ordinary brackets — Single</h3>
+        <div class="adv-table" id="adv-ord-single">
+          <div class="head">Rate</div><div class="head">From</div><div class="head">To</div>
+        </div>
+      </div>
+      <div>
+        <h3>Ordinary brackets — MFJ</h3>
+        <div class="adv-table" id="adv-ord-mfj">
+          <div class="head">Rate</div><div class="head">From</div><div class="head">To</div>
+        </div>
+      </div>
+    </div>
+    <div class="adv-grid">
+      <div>
+        <h3>LTCG / QD brackets — Single</h3>
+        <div class="adv-table" id="adv-ltcg-single">
+          <div class="head">Rate</div><div class="head">From</div><div class="head">To</div>
+        </div>
+      </div>
+      <div>
+        <h3>LTCG / QD brackets — MFJ</h3>
+        <div class="adv-table" id="adv-ltcg-mfj">
+          <div class="head">Rate</div><div class="head">From</div><div class="head">To</div>
+        </div>
+      </div>
+    </div>
+    <button type="button" class="reset-btn" id="reset-defaults">Reset to 2026 defaults</button>
+  </div>
+</details>
+
+<footer>
+  <div>
+    <strong>Disclaimer.</strong> Educational federal tax visualization only. Does not include state tax, AMT, NIIT, ACA subsidy effects, IRMAA, passive activity loss limits, QBI, depreciation recapture, credits, or phaseouts.
+  </div>
+  <div class="tests" id="self-tests">Self-tests: pending</div>
+</footer>
+
+</div>
+
+<script>
+"use strict";
+
+// ---------- 1. Constants / 2026 defaults ----------
+const DEFAULTS_2026 = Object.freeze({
+  standardDeduction: { single: 16100, mfj: 32200 },
+  ordinaryBrackets: {
+    single: [
+      { rate: 0.10, from: 0,       to: 12400 },
+      { rate: 0.12, from: 12400,   to: 50400 },
+      { rate: 0.22, from: 50400,   to: 105700 },
+      { rate: 0.24, from: 105700,  to: 201775 },
+      { rate: 0.32, from: 201775,  to: 256225 },
+      { rate: 0.35, from: 256225,  to: 640600 },
+      { rate: 0.37, from: 640600,  to: Infinity },
+    ],
+    mfj: [
+      { rate: 0.10, from: 0,       to: 24800 },
+      { rate: 0.12, from: 24800,   to: 100800 },
+      { rate: 0.22, from: 100800,  to: 211400 },
+      { rate: 0.24, from: 211400,  to: 403550 },
+      { rate: 0.32, from: 403550,  to: 512450 },
+      { rate: 0.35, from: 512450,  to: 768700 },
+      { rate: 0.37, from: 768700,  to: Infinity },
+    ],
+  },
+  ltcgBrackets: {
+    single: [
+      { rate: 0.00, from: 0,       to: 49450 },
+      { rate: 0.15, from: 49450,   to: 545500 },
+      { rate: 0.20, from: 545500,  to: Infinity },
+    ],
+    mfj: [
+      { rate: 0.00, from: 0,       to: 98900 },
+      { rate: 0.15, from: 98900,   to: 613700 },
+      { rate: 0.20, from: 613700,  to: Infinity },
+    ],
+  },
+});
+
+const DEFAULT_INPUTS = {
+  filing: "single",
+  deductionType: "itemized",
+  itemized: 35000,
+  rental: 20000,
+  interest: 0,
+  stcg: 0,
+  ira: 0,
+  otherOrd: 0,
+  qd: 60000,
+  ltcg: 40000,
+  basis: 80000,
+  target: 200000,
+};
+
+// ---------- 2. State ----------
+function deepCloneBrackets(src) {
+  const clone = (arr) => arr.map(b => ({ ...b }));
+  return {
+    standardDeduction: { ...src.standardDeduction },
+    ordinaryBrackets: { single: clone(src.ordinaryBrackets.single), mfj: clone(src.ordinaryBrackets.mfj) },
+    ltcgBrackets:     { single: clone(src.ltcgBrackets.single),     mfj: clone(src.ltcgBrackets.mfj) },
+  };
+}
+
+const state = {
+  inputs: { ...DEFAULT_INPUTS },
+  brackets: deepCloneBrackets(DEFAULTS_2026),
+};
+
+// ---------- 3. Formatters ----------
+const fmt$ = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const fmt$2 = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 });
+const fmtPct = (x) => (isFinite(x) ? (x * 100).toFixed(2) + "%" : "—");
+const fmtRate = (r) => Math.round(r * 100) + "%";
+const fmtRangeTop = (n) => (n === Infinity ? "∞" : fmt$.format(n));
+
+// ---------- 4. Pure tax math ----------
+function taxFromBrackets(amount, brackets) {
+  let tax = 0;
+  const segments = [];
+  for (const b of brackets) {
+    if (amount <= b.from) break;
+    const top = Math.min(amount, b.to);
+    const inBracket = top - b.from;
+    if (inBracket > 0) {
+      const segTax = inBracket * b.rate;
+      segments.push({ rate: b.rate, from: b.from, to: top, amount: inBracket, tax: segTax });
+      tax += segTax;
+    }
+  }
+  return { total: tax, segments };
+}
+
+function stackedPreferentialTax(ordinaryTaxable, preferentialTaxable, ltcgBrackets) {
+  let tax = 0;
+  const segments = [];
+  const start = ordinaryTaxable;
+  const end = ordinaryTaxable + preferentialTaxable;
+  for (const b of ltcgBrackets) {
+    const segLow = Math.max(start, b.from);
+    const segHigh = Math.min(end, b.to);
+    const inBracket = segHigh - segLow;
+    if (inBracket > 0) {
+      const segTax = inBracket * b.rate;
+      segments.push({ rate: b.rate, from: segLow, to: segHigh, amount: inBracket, tax: segTax });
+      tax += segTax;
+    }
+    if (end <= b.to) break;
+  }
+  return { total: tax, segments };
+}
+
+function computeTax(inputs, brackets) {
+  const grossOrdinary =
+    Math.max(0, inputs.rental) +
+    Math.max(0, inputs.interest) +
+    Math.max(0, inputs.stcg) +
+    Math.max(0, inputs.ira) +
+    Math.max(0, inputs.otherOrd);
+  const grossPreferential = Math.max(0, inputs.qd) + Math.max(0, inputs.ltcg);
+  const nonTaxable = Math.max(0, inputs.basis);
+  const target = Math.max(0, inputs.target);
+
+  const deductionUsed =
+    inputs.deductionType === "standard"
+      ? brackets.standardDeduction[inputs.filing]
+      : Math.max(0, inputs.itemized);
+
+  const fromOrdinary = Math.min(deductionUsed, grossOrdinary);
+  const fromPreferential = Math.min(grossPreferential, Math.max(0, deductionUsed - grossOrdinary));
+  const ordinaryTaxable = Math.max(0, grossOrdinary - deductionUsed);
+  const preferentialTaxable = Math.max(0, grossPreferential - Math.max(0, deductionUsed - grossOrdinary));
+  const totalTaxable = ordinaryTaxable + preferentialTaxable;
+
+  const ordRes = taxFromBrackets(ordinaryTaxable, brackets.ordinaryBrackets[inputs.filing]);
+  const prefRes = stackedPreferentialTax(ordinaryTaxable, preferentialTaxable, brackets.ltcgBrackets[inputs.filing]);
+
+  const ordinaryTax = ordRes.total;
+  const preferentialTax = prefRes.total;
+  const totalTax = ordinaryTax + preferentialTax;
+
+  const totalCashAvailable = grossOrdinary + grossPreferential + nonTaxable;
+  const afterTaxCash = totalCashAvailable - totalTax;
+  const gapVsTarget = afterTaxCash - target;
+
+  const effectiveOnTaxable = totalTaxable > 0 ? totalTax / totalTaxable : 0;
+  const effectiveOnCash = totalCashAvailable > 0 ? totalTax / totalCashAvailable : 0;
+
+  const zero = brackets.ltcgBrackets[inputs.filing].find(b => b.rate === 0);
+  const zeroTop = zero ? zero.to : 0;
+  const zeroPctLtcgRoomRemaining = Math.max(0, zeroTop - ordinaryTaxable - preferentialTaxable);
+
+  return {
+    inputs, filing: inputs.filing,
+    grossOrdinary, grossPreferential, nonTaxable, target,
+    deductionUsed,
+    deductionShield: { fromOrdinary, fromPreferential },
+    ordinaryTaxable, preferentialTaxable, totalTaxable,
+    ordinarySegments: ordRes.segments,
+    preferentialSegments: prefRes.segments,
+    ordinaryTax, preferentialTax, totalTax,
+    totalCashAvailable, afterTaxCash, gapVsTarget,
+    effectiveOnTaxable, effectiveOnCash,
+    zeroPctLtcgRoomRemaining,
+  };
+}
+
+// ---------- 5. Bracket colors ----------
+function ordinaryColor(rate, brackets) {
+  // Darker as rate climbs.
+  const rates = brackets.map(b => b.rate);
+  const idx = rates.indexOf(rate);
+  const n = Math.max(1, rates.length - 1);
+  const t = idx < 0 ? 0 : idx / n;
+  const L = 78 - t * 38; // 78% -> 40%
+  return `hsl(212, 65%, ${L}%)`;
+}
+function preferentialColor(rate) {
+  if (rate === 0) return "hsl(150, 45%, 78%)";
+  if (rate === 0.15) return "hsl(150, 50%, 52%)";
+  if (rate === 0.20) return "hsl(150, 55%, 32%)";
+  return "hsl(150, 50%, 50%)";
+}
+
+// ---------- 6. Input/form binding ----------
+function applyInputsToForm() {
+  const i = state.inputs;
+  document.querySelector(`input[name="filing"][value="${i.filing}"]`).checked = true;
+  document.querySelector(`input[name="deduction"][value="${i.deductionType}"]`).checked = true;
+  document.getElementById("i-rental").value = i.rental;
+  document.getElementById("i-interest").value = i.interest;
+  document.getElementById("i-stcg").value = i.stcg;
+  document.getElementById("i-ira").value = i.ira;
+  document.getElementById("i-other-ord").value = i.otherOrd;
+  document.getElementById("i-qd").value = i.qd;
+  document.getElementById("i-ltcg").value = i.ltcg;
+  document.getElementById("i-basis").value = i.basis;
+  document.getElementById("i-itemized").value = i.itemized;
+  document.getElementById("i-target").value = i.target;
+}
+
+function readInputs() {
+  const num = (id) => {
+    const v = parseFloat(document.getElementById(id).value);
+    return isFinite(v) && v > 0 ? v : 0;
+  };
+  state.inputs = {
+    filing: document.querySelector('input[name="filing"]:checked').value,
+    deductionType: document.querySelector('input[name="deduction"]:checked').value,
+    rental: num("i-rental"),
+    interest: num("i-interest"),
+    stcg: num("i-stcg"),
+    ira: num("i-ira"),
+    otherOrd: num("i-other-ord"),
+    qd: num("i-qd"),
+    ltcg: num("i-ltcg"),
+    basis: num("i-basis"),
+    itemized: num("i-itemized"),
+    target: num("i-target"),
+  };
+}
+
+// ---------- 7. Renderers ----------
+function el(tag, attrs = {}, children = []) {
+  const ns = ["svg","rect","g","text","line","pattern","defs","path","tspan"].includes(tag)
+    ? "http://www.w3.org/2000/svg" : null;
+  const node = ns ? document.createElementNS(ns, tag) : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v === false || v == null) continue;
+    if (k === "text") node.textContent = v;
+    else if (k === "html") node.innerHTML = v;
+    else node.setAttribute(k, v);
+  }
+  for (const c of [].concat(children)) {
+    if (c == null) continue;
+    node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+  }
+  return node;
+}
+
+function renderSummary(r) {
+  const root = document.getElementById("summary");
+  root.innerHTML = "";
+  const rows = [
+    ["Total cash available", fmt$.format(r.totalCashAvailable), "strong"],
+    ["Deduction used", fmt$.format(r.deductionUsed), ""],
+    ["Ordinary taxable income", fmt$.format(r.ordinaryTaxable), ""],
+    ["Preferential taxable income", fmt$.format(r.preferentialTaxable), ""],
+    ["Taxable income", fmt$.format(r.totalTaxable), "strong"],
+    ["Federal ordinary tax", fmt$.format(r.ordinaryTax), ""],
+    ["Federal LTCG / QD tax", fmt$.format(r.preferentialTax), ""],
+    ["Total federal tax", fmt$.format(r.totalTax), "total"],
+    ["Effective rate on taxable income", fmtPct(r.effectiveOnTaxable), ""],
+    ["Effective rate on total cash", fmtPct(r.effectiveOnCash), ""],
+    ["After-tax cash", fmt$.format(r.afterTaxCash), "strong"],
+    [
+      `<span class="hint" data-hint="The amount of qualified dividends or LTCG that would still fit in the 0% LTCG bracket given your other income and deductions.">Remaining 0% LTCG room</span>`,
+      fmt$.format(r.zeroPctLtcgRoomRemaining), ""
+    ],
+    [
+      r.gapVsTarget >= 0 ? "Surplus vs target spending" : "Gap vs target spending",
+      (r.gapVsTarget >= 0 ? "+" : "") + fmt$.format(r.gapVsTarget),
+      "gap" + (r.gapVsTarget < 0 ? " short" : "")
+    ],
+  ];
+  for (const [lbl, val, cls] of rows) {
+    const row = el("div", { class: "row " + (cls || "") });
+    row.appendChild(el("div", { class: "lbl", html: lbl }));
+    row.appendChild(el("div", { class: "val", text: val }));
+    root.appendChild(row);
+  }
+}
+
+function renderChart(r) {
+  const svg = document.getElementById("chart");
+  svg.innerHTML = "";
+  const W = 720, H = 480;
+  const padL = 70, padR = 24, padT = 20, padB = 50;
+  const chartW = W - padL - padR;
+  const chartH = H - padT - padB;
+  const barW = 120;
+  const gap = 40;
+  const totalBarsW = barW * 2 + gap;
+  const x0 = padL + (chartW - totalBarsW) / 2;
+  const xA = x0;
+  const xB = x0 + barW + gap;
+
+  // Y-axis max
+  const yMax = Math.max(
+    r.totalCashAvailable,
+    r.target,
+    r.grossOrdinary + r.grossPreferential,
+    1
+  ) * 1.05;
+
+  const y = (v) => padT + chartH - (v / yMax) * chartH;
+  const h = (v) => (v / yMax) * chartH;
+
+  // Defs (hatched pattern)
+  const defs = el("defs", {});
+  const pat = el("pattern", { id: "shield-pat", width: 8, height: 8, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" });
+  pat.appendChild(el("rect", { width: 8, height: 8, fill: "#eef2f7" }));
+  pat.appendChild(el("line", { x1: 0, y1: 0, x2: 0, y2: 8, stroke: "#9ca3af", "stroke-width": 2 }));
+  defs.appendChild(pat);
+  svg.appendChild(defs);
+
+  // Y-axis ticks at "nice" round values
+  const niceStep = (function () {
+    const target = yMax / 6;
+    const pow = Math.pow(10, Math.floor(Math.log10(target)));
+    const candidates = [1, 2, 2.5, 5, 10];
+    for (const c of candidates) {
+      if (c * pow >= target) return c * pow;
+    }
+    return 10 * pow;
+  })();
+  const grid = el("g", { class: "grid" });
+  for (let v = 0; v <= yMax; v += niceStep) {
+    const yy = y(v);
+    grid.appendChild(el("line", { x1: padL, x2: W - padR, y1: yy, y2: yy, stroke: "#eef0f4", "stroke-width": 1 }));
+    grid.appendChild(el("text", {
+      x: padL - 8, y: yy + 4, "font-size": 11, fill: "#6b7280", "text-anchor": "end",
+      text: fmt$.format(v),
+    }));
+  }
+  svg.appendChild(grid);
+
+  // Bracket-boundary reference lines (only those within yMax) for the filing status
+  const refLines = el("g", { class: "refs" });
+  const ordB = state.brackets.ordinaryBrackets[r.filing];
+  const ltcgB = state.brackets.ltcgBrackets[r.filing];
+  // Show ordinary bracket tops as faint blue
+  ordB.forEach((b) => {
+    if (b.to !== Infinity && b.to <= yMax) {
+      const yy = y(b.to + r.deductionShield.fromOrdinary); // place in chart's "gross" space
+      refLines.appendChild(el("line", {
+        x1: xA, x2: xA + barW, y1: yy, y2: yy,
+        stroke: "#1d4ed8", "stroke-dasharray": "2 3", "stroke-width": 0.5, opacity: 0.4,
+      }));
+    }
+  });
+  // LTCG bracket tops as faint green, positioned in stacked-taxable space
+  ltcgB.forEach((b) => {
+    if (b.to !== Infinity && b.to <= yMax) {
+      // Position relative to: taxable income axis. In chart space: (b.to - ordinaryTaxable shielded) starts above shield.
+      // Simpler: ref line shown as the value of taxable income = b.to. In chart space, shield occupies bottom; taxable starts at deductionUsed.
+      const yy = y(b.to + r.deductionUsed);
+      refLines.appendChild(el("line", {
+        x1: xA, x2: xA + barW, y1: yy, y2: yy,
+        stroke: "#047857", "stroke-dasharray": "2 3", "stroke-width": 0.5, opacity: 0.4,
+      }));
+    }
+  });
+  svg.appendChild(refLines);
+
+  // ---- Bar A: Tax stack (in gross-income space) ----
+  const barA = el("g", { class: "barA" });
+  let cursor = 0; // bottom-up
+
+  // Shielded ordinary
+  if (r.deductionShield.fromOrdinary > 0) {
+    const segH = h(r.deductionShield.fromOrdinary);
+    const yy = y(cursor + r.deductionShield.fromOrdinary);
+    const rect = el("rect", { x: xA, y: yy, width: barW, height: segH, fill: "url(#shield-pat)", stroke: "#cbd5e1" });
+    rect.appendChild(el("title", { text: `Shielded ordinary (deduction): ${fmt$.format(r.deductionShield.fromOrdinary)}` }));
+    barA.appendChild(rect);
+    cursor += r.deductionShield.fromOrdinary;
+  }
+
+  // Ordinary taxable segments
+  for (const s of r.ordinarySegments) {
+    const segH = h(s.amount);
+    const yy = y(cursor + s.amount);
+    const fill = ordinaryColor(s.rate, ordB);
+    const rect = el("rect", { x: xA, y: yy, width: barW, height: segH, fill, stroke: "#fff", "stroke-width": 0.5 });
+    rect.appendChild(el("title", {
+      text: `Ordinary @ ${fmtRate(s.rate)} • income ${fmt$.format(s.amount)} • tax ${fmt$2.format(s.tax)} • range ${fmt$.format(s.from)}–${fmtRangeTop(s.to)}`
+    }));
+    barA.appendChild(rect);
+    if (segH > 14) {
+      barA.appendChild(el("text", {
+        x: xA + barW / 2, y: yy + segH / 2 + 4, "text-anchor": "middle",
+        "font-size": 11, fill: s.rate >= 0.22 ? "#fff" : "#0b2545",
+        text: `${fmtRate(s.rate)} · ${fmt$.format(s.amount)}`,
+      }));
+    }
+    cursor += s.amount;
+  }
+
+  // Shielded preferential (spillover)
+  if (r.deductionShield.fromPreferential > 0) {
+    const segH = h(r.deductionShield.fromPreferential);
+    const yy = y(cursor + r.deductionShield.fromPreferential);
+    const rect = el("rect", { x: xA, y: yy, width: barW, height: segH, fill: "url(#shield-pat)", stroke: "#cbd5e1" });
+    rect.appendChild(el("title", { text: `Shielded preferential (deduction spillover): ${fmt$.format(r.deductionShield.fromPreferential)}` }));
+    barA.appendChild(rect);
+    cursor += r.deductionShield.fromPreferential;
+  }
+
+  // Preferential taxable segments
+  for (const s of r.preferentialSegments) {
+    const segH = h(s.amount);
+    const yy = y(cursor + s.amount);
+    const fill = preferentialColor(s.rate);
+    const rect = el("rect", { x: xA, y: yy, width: barW, height: segH, fill, stroke: "#fff", "stroke-width": 0.5 });
+    rect.appendChild(el("title", {
+      text: `Preferential @ ${fmtRate(s.rate)} • income ${fmt$.format(s.amount)} • tax ${fmt$2.format(s.tax)} • taxable-income range ${fmt$.format(s.from)}–${fmtRangeTop(s.to)}`
+    }));
+    barA.appendChild(rect);
+    if (segH > 14) {
+      barA.appendChild(el("text", {
+        x: xA + barW / 2, y: yy + segH / 2 + 4, "text-anchor": "middle",
+        "font-size": 11, fill: s.rate >= 0.20 ? "#fff" : "#063b27",
+        text: `${fmtRate(s.rate)} · ${fmt$.format(s.amount)}`,
+      }));
+    }
+    cursor += s.amount;
+  }
+
+  // Bar A label
+  barA.appendChild(el("text", {
+    x: xA + barW / 2, y: H - padB + 18, "text-anchor": "middle", "font-size": 12, fill: "#374151",
+    text: "Tax stack (gross income)",
+  }));
+  // Total above bar
+  const totalA = r.grossOrdinary + r.grossPreferential;
+  if (totalA > 0) {
+    barA.appendChild(el("text", {
+      x: xA + barW / 2, y: y(totalA) - 6, "text-anchor": "middle", "font-size": 12, fill: "#111827",
+      text: `${fmt$.format(totalA)} taxable-system income`,
+    }));
+  }
+  svg.appendChild(barA);
+
+  // ---- Bar B: Spending sources ----
+  const barB = el("g", { class: "barB" });
+  let cb = 0;
+  const pushB = (amount, fill, label) => {
+    if (amount <= 0) return;
+    const segH = h(amount);
+    const yy = y(cb + amount);
+    const rect = el("rect", { x: xB, y: yy, width: barW, height: segH, fill, stroke: "#fff", "stroke-width": 0.5 });
+    rect.appendChild(el("title", { text: `${label}: ${fmt$.format(amount)}` }));
+    barB.appendChild(rect);
+    if (segH > 14) {
+      barB.appendChild(el("text", {
+        x: xB + barW / 2, y: yy + segH / 2 + 4, "text-anchor": "middle",
+        "font-size": 11, fill: "#111827",
+        text: `${label} · ${fmt$.format(amount)}`,
+      }));
+    }
+    cb += amount;
+  };
+  pushB(r.grossOrdinary,     "hsl(212, 55%, 70%)", "Ordinary");
+  pushB(r.grossPreferential, "hsl(150, 50%, 60%)", "Preferential");
+  pushB(r.nonTaxable,        "hsl(45, 80%, 70%)",  "Non-taxable");
+
+  barB.appendChild(el("text", {
+    x: xB + barW / 2, y: H - padB + 18, "text-anchor": "middle", "font-size": 12, fill: "#374151",
+    text: "Spending sources (gross)",
+  }));
+  if (r.totalCashAvailable > 0) {
+    barB.appendChild(el("text", {
+      x: xB + barW / 2, y: y(r.totalCashAvailable) - 6, "text-anchor": "middle", "font-size": 12, fill: "#111827",
+      text: `${fmt$.format(r.totalCashAvailable)} cash`,
+    }));
+  }
+  svg.appendChild(barB);
+
+  // Target spending dashed line
+  if (r.target > 0 && r.target <= yMax) {
+    const yy = y(r.target);
+    svg.appendChild(el("line", {
+      x1: padL, x2: W - padR, y1: yy, y2: yy,
+      stroke: "var(--target)", "stroke-dasharray": "5 4", "stroke-width": 1.5,
+    }));
+    svg.appendChild(el("text", {
+      x: W - padR, y: yy - 4, "text-anchor": "end", "font-size": 11, fill: "#b91c1c",
+      text: `Target spending ${fmt$.format(r.target)}`,
+    }));
+  }
+
+  // Legend
+  renderLegend(r);
+}
+
+function renderLegend(r) {
+  const root = document.getElementById("legend");
+  root.innerHTML = "";
+  const items = [];
+  const ordB = state.brackets.ordinaryBrackets[r.filing];
+  // Only include ordinary brackets that have segments
+  const usedOrd = new Set(r.ordinarySegments.map(s => s.rate));
+  for (const b of ordB) {
+    if (usedOrd.has(b.rate)) {
+      items.push({ label: `Ordinary ${fmtRate(b.rate)}`, color: ordinaryColor(b.rate, ordB) });
+    }
+  }
+  const usedPref = new Set(r.preferentialSegments.map(s => s.rate));
+  for (const rate of [0, 0.15, 0.20]) {
+    if (usedPref.has(rate)) items.push({ label: `LTCG / QD ${fmtRate(rate)}`, color: preferentialColor(rate) });
+  }
+  if (r.deductionUsed > 0) items.push({ label: "Shielded by deduction", color: "url(#shield-pat)", stripes: true });
+  if (r.nonTaxable > 0) items.push({ label: "Non-taxable basis (cash flow)", color: "hsl(45, 80%, 70%)" });
+  if (r.target > 0) items.push({ label: "Target spending", color: "var(--target)", line: true });
+
+  for (const it of items) {
+    const span = el("span", {});
+    if (it.stripes) {
+      span.appendChild(el("span", { class: "swatch", style: "background: repeating-linear-gradient(45deg,#eef2f7,#eef2f7 3px,#9ca3af 3px,#9ca3af 5px);" }));
+    } else if (it.line) {
+      span.appendChild(el("span", { class: "swatch", style: `background: linear-gradient(to right, ${it.color} 50%, transparent 50%); background-size: 6px 100%;` }));
+    } else {
+      span.appendChild(el("span", { class: "swatch", style: `background:${it.color};` }));
+    }
+    span.appendChild(document.createTextNode(it.label));
+    root.appendChild(span);
+  }
+}
+
+function renderBreakdownTables(r) {
+  // Ordinary
+  const ordTbody = document.querySelector("#ord-table tbody");
+  const ordTfoot = document.querySelector("#ord-table tfoot");
+  ordTbody.innerHTML = "";
+  ordTfoot.innerHTML = "";
+  if (r.ordinarySegments.length === 0) {
+    ordTbody.appendChild(el("tr", {}, el("td", { colspan: 4, text: "No ordinary taxable income.", style: "color:#6b7280;text-align:left;" })));
+  } else {
+    for (const s of r.ordinarySegments) {
+      const tr = el("tr");
+      tr.appendChild(el("td", { text: fmtRate(s.rate) }));
+      tr.appendChild(el("td", { text: `${fmt$.format(s.from)} – ${fmtRangeTop(s.to)}` }));
+      tr.appendChild(el("td", { text: fmt$.format(s.amount) }));
+      tr.appendChild(el("td", { text: fmt$2.format(s.tax) }));
+      ordTbody.appendChild(tr);
+    }
+    const tf = el("tr");
+    tf.appendChild(el("td", { text: "Total" }));
+    tf.appendChild(el("td", { text: "" }));
+    tf.appendChild(el("td", { text: fmt$.format(r.ordinaryTaxable) }));
+    tf.appendChild(el("td", { text: fmt$2.format(r.ordinaryTax) }));
+    ordTfoot.appendChild(tf);
+  }
+
+  // Preferential
+  const prefTbody = document.querySelector("#pref-table tbody");
+  const prefTfoot = document.querySelector("#pref-table tfoot");
+  prefTbody.innerHTML = "";
+  prefTfoot.innerHTML = "";
+  if (r.preferentialSegments.length === 0) {
+    prefTbody.appendChild(el("tr", {}, el("td", { colspan: 4, text: "No preferential taxable income.", style: "color:#6b7280;text-align:left;" })));
+  } else {
+    for (const s of r.preferentialSegments) {
+      const tr = el("tr");
+      tr.appendChild(el("td", { text: fmtRate(s.rate) }));
+      tr.appendChild(el("td", { text: `${fmt$.format(s.from)} – ${fmtRangeTop(s.to)}` }));
+      tr.appendChild(el("td", { text: fmt$.format(s.amount) }));
+      tr.appendChild(el("td", { text: fmt$2.format(s.tax) }));
+      prefTbody.appendChild(tr);
+    }
+    const tf = el("tr");
+    tf.appendChild(el("td", { text: "Total" }));
+    tf.appendChild(el("td", { text: "" }));
+    tf.appendChild(el("td", { text: fmt$.format(r.preferentialTaxable) }));
+    tf.appendChild(el("td", { text: fmt$2.format(r.preferentialTax) }));
+    prefTfoot.appendChild(tf);
+  }
+}
+
+// ---------- 8. Advanced settings ----------
+function renderAdvanced() {
+  document.getElementById("adv-std-single").value = state.brackets.standardDeduction.single;
+  document.getElementById("adv-std-mfj").value    = state.brackets.standardDeduction.mfj;
+  renderBracketEditor("adv-ord-single",  state.brackets.ordinaryBrackets.single,  "ord", "single");
+  renderBracketEditor("adv-ord-mfj",     state.brackets.ordinaryBrackets.mfj,     "ord", "mfj");
+  renderBracketEditor("adv-ltcg-single", state.brackets.ltcgBrackets.single,      "ltcg","single");
+  renderBracketEditor("adv-ltcg-mfj",    state.brackets.ltcgBrackets.mfj,         "ltcg","mfj");
+}
+
+function renderBracketEditor(containerId, brackets, kind, filing) {
+  const root = document.getElementById(containerId);
+  // Clear all rows except the header (first 3 children)
+  while (root.children.length > 3) root.removeChild(root.lastChild);
+  brackets.forEach((b, i) => {
+    const rateInput = el("input", { type: "number", step: 0.01, min: 0, max: 1, value: b.rate.toFixed(4), "data-kind": kind, "data-filing": filing, "data-idx": i, "data-field": "rate" });
+    const fromInput = el("input", { type: "number", step: 100, value: b.from, "data-kind": kind, "data-filing": filing, "data-idx": i, "data-field": "from" });
+    const toIsInf = b.to === Infinity;
+    const toInput = el("input", { type: "number", step: 100, value: toIsInf ? "" : b.to, placeholder: toIsInf ? "∞" : "", "data-kind": kind, "data-filing": filing, "data-idx": i, "data-field": "to" });
+    root.appendChild(rateInput);
+    root.appendChild(fromInput);
+    root.appendChild(toInput);
+  });
+}
+
+function readAdvancedInto(state) {
+  const std = state.brackets.standardDeduction;
+  std.single = parseFloat(document.getElementById("adv-std-single").value) || 0;
+  std.mfj    = parseFloat(document.getElementById("adv-std-mfj").value) || 0;
+  for (const containerId of ["adv-ord-single","adv-ord-mfj","adv-ltcg-single","adv-ltcg-mfj"]) {
+    const root = document.getElementById(containerId);
+    const inputs = root.querySelectorAll("input");
+    inputs.forEach(input => {
+      const kind = input.dataset.kind, filing = input.dataset.filing, idx = parseInt(input.dataset.idx, 10), field = input.dataset.field;
+      const target = (kind === "ord" ? state.brackets.ordinaryBrackets : state.brackets.ltcgBrackets)[filing][idx];
+      if (!target) return;
+      if (field === "rate") {
+        const v = parseFloat(input.value);
+        target.rate = isFinite(v) ? v : 0;
+      } else if (field === "from") {
+        const v = parseFloat(input.value);
+        target.from = isFinite(v) ? v : 0;
+      } else if (field === "to") {
+        if (input.value === "" || input.value == null) target.to = Infinity;
+        else { const v = parseFloat(input.value); target.to = isFinite(v) ? v : Infinity; }
+      }
+    });
+  }
+}
+
+// ---------- 9. Recompute / event wiring ----------
+function recompute() {
+  readInputs();
+  const r = computeTax(state.inputs, state.brackets);
+  renderSummary(r);
+  renderChart(r);
+  renderBreakdownTables(r);
+}
+
+function wireEvents() {
+  document.getElementById("inputs").addEventListener("input", recompute);
+  document.querySelectorAll('input[name="filing"]').forEach(r => r.addEventListener("change", recompute));
+  document.querySelectorAll('input[name="deduction"]').forEach(r => r.addEventListener("change", recompute));
+
+  document.getElementById("advanced-body").addEventListener("input", (e) => {
+    if (!(e.target instanceof HTMLInputElement)) return;
+    readAdvancedInto(state);
+    recompute();
+  });
+
+  document.getElementById("reset-defaults").addEventListener("click", () => {
+    state.brackets = deepCloneBrackets(DEFAULTS_2026);
+    renderAdvanced();
+    recompute();
+  });
+}
+
+// ---------- 10. Self-tests ----------
+function approx(a, b, tol = 0.5) { return Math.abs(a - b) <= tol; }
+
+function runSelfTests() {
+  const results = [];
+  const test = (name, fn) => {
+    try {
+      const ok = fn();
+      results.push({ name, ok: !!ok });
+      console.assert(ok, "FAIL: " + name);
+    } catch (e) {
+      results.push({ name, ok: false, err: e });
+      console.error("ERROR in test:", name, e);
+    }
+  };
+  const D = DEFAULTS_2026;
+  const baseInputs = {
+    filing: "single", deductionType: "standard",
+    rental: 0, interest: 0, stcg: 0, ira: 0, otherOrd: 0,
+    qd: 0, ltcg: 0, basis: 0, itemized: 0, target: 0,
+  };
+
+  test("zero income → zero tax", () => {
+    const r = computeTax({ ...baseInputs }, D);
+    return r.totalTax === 0 && r.totalTaxable === 0 && r.gapVsTarget === 0;
+  });
+
+  test("ordinary below std deduction → zero ordinary tax, deduction spills to preferential", () => {
+    const r = computeTax({ ...baseInputs, rental: 10000, qd: 30000 }, D);
+    // std single = 16,100; ordinary 10k - shielded 10k -> 0 ordinary taxable
+    // spillover 6,100 reduces preferential -> preferential taxable 23,900, all in 0% LTCG band
+    return r.ordinaryTax === 0 && r.preferentialTaxable === 23900 && r.preferentialTax === 0
+      && r.deductionShield.fromOrdinary === 10000 && r.deductionShield.fromPreferential === 6100;
+  });
+
+  test("Single, $0 ord + $50k LTCG: 0% segment = $49,450, 15% segment = $550", () => {
+    const r = computeTax({ ...baseInputs, deductionType: "itemized", itemized: 0, ltcg: 50000 }, D);
+    const seg0 = r.preferentialSegments.find(s => s.rate === 0);
+    const seg15 = r.preferentialSegments.find(s => s.rate === 0.15);
+    return seg0 && seg0.amount === 49450 && seg15 && seg15.amount === 550 && approx(r.preferentialTax, 82.5, 0.01);
+  });
+
+  test("Single, $0 ord + $60k LTCG straddles 0/15 at $49,450", () => {
+    const r = computeTax({ ...baseInputs, deductionType: "itemized", itemized: 0, ltcg: 60000 }, D);
+    const seg0 = r.preferentialSegments.find(s => s.rate === 0);
+    const seg15 = r.preferentialSegments.find(s => s.rate === 0.15);
+    return seg0.amount === 49450 && seg15.amount === 10550 && approx(r.preferentialTax, 1582.5, 0.01);
+  });
+
+  test("MFJ defaults: std deduction $32,200 and 0% LTCG top $98,900", () => {
+    return D.standardDeduction.mfj === 32200 && D.ltcgBrackets.mfj[0].to === 98900;
+  });
+
+  test("standard vs itemized produces different deduction", () => {
+    const a = computeTax({ ...baseInputs, deductionType: "standard", rental: 50000 }, D);
+    const b = computeTax({ ...baseInputs, deductionType: "itemized", itemized: 5000, rental: 50000 }, D);
+    return a.deductionUsed === 16100 && b.deductionUsed === 5000 && a.totalTax !== b.totalTax;
+  });
+
+  test("Prompt default scenario totals", () => {
+    const r = computeTax({
+      ...baseInputs,
+      filing: "single", deductionType: "itemized", itemized: 35000,
+      rental: 20000, qd: 60000, ltcg: 40000, basis: 80000, target: 200000,
+    }, D);
+    // ordinary taxable = 0
+    // pref taxable = 100,000 - 15,000 = 85,000
+    // 0% on first 49,450; 15% on remaining 35,550 = 5,332.50
+    return r.ordinaryTaxable === 0 && r.preferentialTaxable === 85000
+      && approx(r.preferentialTax, 5332.5, 0.01)
+      && r.zeroPctLtcgRoomRemaining === 0
+      && approx(r.totalCashAvailable, 200000, 0.01);
+  });
+
+  test("Same scenario as MFJ goes to $0 tax (under $98,900 0% threshold)", () => {
+    const r = computeTax({
+      ...baseInputs,
+      filing: "mfj", deductionType: "itemized", itemized: 35000,
+      rental: 20000, qd: 60000, ltcg: 40000, basis: 80000, target: 200000,
+    }, D);
+    return r.totalTax === 0 && r.preferentialTaxable === 85000;
+  });
+
+  test("Ordinary brackets walk: $60k single ordinary taxable", () => {
+    // 10% on first 12,400 = 1,240
+    // 12% on (50,400-12,400)=38,000 = 4,560
+    // 22% on (60,000-50,400)=9,600 = 2,112
+    // total = 7,912
+    const { total } = taxFromBrackets(60000, D.ordinaryBrackets.single);
+    return approx(total, 7912, 0.01);
+  });
+
+  // Render results to footer
+  const footer = document.getElementById("self-tests");
+  const passed = results.filter(r => r.ok).length;
+  const total = results.length;
+  footer.classList.remove("pass", "fail");
+  footer.classList.add(passed === total ? "pass" : "fail");
+  const failed = results.filter(r => !r.ok).map(r => r.name);
+  footer.textContent = `Self-tests: ${passed}/${total} passed` + (failed.length ? ` — failing: ${failed.join("; ")}` : "");
+}
+
+// ---------- 11. Init ----------
+document.addEventListener("DOMContentLoaded", () => {
+  applyInputsToForm();
+  renderAdvanced();
+  wireEvents();
+  recompute();
+  runSelfTests();
+});
+
+</script>
+</body>
+</html>
