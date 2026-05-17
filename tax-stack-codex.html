@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Federal Tax Stack Retirement Planner</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d1117;
+      --panel: #151b23;
+      --panel-2: #1f2630;
+      --panel-3: #101620;
+      --border: #303947;
+      --text: #eef2f7;
+      --muted: #9aa7b7;
+      --accent: #7c9cff;
+      --accent-2: #9b7cff;
+      --good: #5ee787;
+      --warn: #ffd166;
+      --bad: #ff7b72;
+      --deduct: #4f8cff;
+      --deduct-2: #74a5ff;
+      --ordinary-10: #fed766;
+      --ordinary-12: #f6ad55;
+      --ordinary-22: #ed8936;
+      --ordinary-24: #dd6b20;
+      --ordinary-32: #c05621;
+      --ordinary-35: #9c4221;
+      --ordinary-37: #7b341e;
+      --ltcg-0: #68d391;
+      --ltcg-15: #38b2ac;
+      --ltcg-20: #2c7a7b;
+      --basis: #b794f4;
+      --unused: #718096;
+      --tax-drag: #e53e3e;
+      --radius: 16px;
+      --input-bg: #0c121b;
+      --bar-bg: #0b111a;
+      --label: #c9d3df;
+      --metric-bg: rgba(16,22,32,.74);
+      --tip-bg: #0b111a;
+      --subcard-bg: rgba(16,22,32,.68);
+      --heading-soft: #dfe7f1;
+      --shadow: 0 16px 45px rgba(0,0,0,.28);
+    }
+
+    body.light {
+      color-scheme: light;
+      --bg: #f6f8fc;
+      --panel: #ffffff;
+      --panel-2: #eef2f8;
+      --panel-3: #f3f6fb;
+      --border: #d8e0ec;
+      --text: #142033;
+      --muted: #637184;
+      --accent: #355cff;
+      --accent-2: #7651d8;
+      --good: #167a3a;
+      --warn: #9b6700;
+      --bad: #c0352b;
+      --input-bg: #ffffff;
+      --bar-bg: #eef3fa;
+      --label: #243247;
+      --metric-bg: #f7f9fd;
+      --tip-bg: #ffffff;
+      --subcard-bg: #f7f9fd;
+      --heading-soft: #243247;
+      --shadow: 0 14px 34px rgba(31,45,70,.12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 20% -10%, rgba(124,156,255,.18), transparent 30%),
+        radial-gradient(circle at 80% 0%, rgba(155,124,255,.16), transparent 28%),
+        var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    button, input, select { font: inherit; }
+    .container { max-width: 1380px; margin: 0 auto; padding: 22px; }
+    header { margin-bottom: 18px; }
+    .header-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .theme-toggle { flex: 0 0 auto; }
+    .eyebrow { color: var(--accent); font-size: .78rem; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    h1 { margin: 4px 0 6px; font-size: clamp(1.75rem, 3vw, 3rem); line-height: 1.05; letter-spacing: -.045em; }
+    .subtitle { color: var(--muted); max-width: 850px; }
+
+    .app-grid { display: grid; grid-template-columns: 410px minmax(0,1fr); gap: 18px; align-items: start; }
+    @media (max-width: 980px) { .app-grid { grid-template-columns: 1fr; } }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.035), transparent), var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card.pad { padding: 18px; }
+    .card-title {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin: 0 0 14px; font-size: 1rem; letter-spacing: -.01em;
+    }
+    .card-title span:first-child { display: flex; align-items: center; gap: 8px; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 9px; border: 1px solid var(--border); border-radius: 999px;
+      color: var(--muted); background: var(--panel-3); font-size: .76rem; font-weight: 700;
+    }
+
+    .form-section { padding: 16px 18px; border-bottom: 1px solid var(--border); }
+    .form-section:last-child { border-bottom: 0; }
+    .section-title {
+      margin: 0 0 10px; color: var(--muted); font-size: .77rem; font-weight: 900;
+      letter-spacing: .1em; text-transform: uppercase;
+    }
+    .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field { margin-bottom: 10px; }
+    .field:last-child { margin-bottom: 0; }
+    label { display: block; margin-bottom: 5px; color: var(--label); font-size: .85rem; font-weight: 650; }
+    input[type="number"], select {
+      width: 100%; padding: 10px 11px; border-radius: 11px; border: 1px solid var(--border);
+      background: var(--input-bg); color: var(--text); outline: none;
+    }
+    input[type="number"]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,156,255,.14); }
+    .segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border: 1px solid var(--border); border-radius: 13px; background: var(--input-bg); }
+    .segmented label { margin: 0; cursor: pointer; }
+    .segmented input { position: absolute; opacity: 0; pointer-events: none; }
+    .segmented span { display: block; text-align: center; padding: 8px 10px; border-radius: 9px; color: var(--muted); font-weight: 800; font-size: .84rem; }
+    .segmented input:checked + span { color: white; background: linear-gradient(135deg, rgba(124,156,255,.9), rgba(155,124,255,.72)); }
+    .hint { color: var(--muted); font-size: .78rem; margin-top: 7px; }
+
+    .tip {
+      position: relative; display: inline-flex; align-items: center; justify-content: center;
+      width: 17px; height: 17px; margin-left: 4px; border-radius: 50%;
+      border: 1px solid var(--border); color: var(--muted); font-size: .7rem; cursor: help;
+      vertical-align: text-bottom; background: var(--panel-2);
+    }
+    .tip::before,
+    .tip::after {
+      position: absolute; left: 50%; opacity: 0; pointer-events: none;
+      transform: translateX(-50%) translateY(4px); transition: opacity .12s ease, transform .12s ease;
+    }
+    .tip::after {
+      content: attr(data-tip); z-index: 30; bottom: calc(100% + 10px);
+      width: max-content; max-width: 280px; padding: 8px 10px; border-radius: 8px;
+      background: var(--tip-bg); color: var(--text); border: 1px solid var(--border);
+      box-shadow: 0 8px 24px rgba(0,0,0,.26); font-size: .76rem; line-height: 1.35;
+      font-weight: 550; text-transform: none; letter-spacing: 0; text-align: left; white-space: normal;
+    }
+    .tip::before {
+      content: ''; z-index: 31; bottom: calc(100% + 5px); width: 9px; height: 9px;
+      background: var(--tip-bg); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      transform: translateX(-50%) translateY(4px) rotate(45deg);
+    }
+    .tip:hover::before,
+    .tip:hover::after,
+    .tip:focus::before,
+    .tip:focus::after {
+      opacity: 1;
+    }
+    .tip:hover::after,
+    .tip:focus::after { transform: translateX(-50%) translateY(0); }
+    .tip:hover::before,
+    .tip:focus::before { transform: translateX(-50%) translateY(0) rotate(45deg); }
+
+    .right-stack { display: grid; gap: 18px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    @media (max-width: 800px) { .summary-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    @media (max-width: 480px) { .summary-grid { grid-template-columns: 1fr; } }
+    .metric { padding: 13px; border: 1px solid var(--border); border-radius: 14px; background: var(--metric-bg); }
+    .metric .label { color: var(--muted); font-size: .75rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; }
+    .metric .value { margin-top: 4px; font-size: clamp(1rem, 1.7vw, 1.35rem); font-weight: 900; letter-spacing: -.03em; }
+    .metric.good .value { color: var(--good); }
+    .metric.bad .value { color: var(--bad); }
+    .metric.accent .value { color: var(--accent); }
+
+    .two-col { display: grid; grid-template-columns: 1.18fr .82fr; gap: 18px; }
+    @media (max-width: 1100px) { .two-col { grid-template-columns: 1fr; } }
+
+    .stack-wrap { display: grid; gap: 15px; }
+    .bar-row { display: grid; grid-template-columns: 168px minmax(0,1fr) 112px; gap: 10px; align-items: center; }
+    @media (max-width: 640px) { .bar-row { grid-template-columns: 1fr; gap: 6px; } }
+    .bar-label { color: var(--heading-soft); font-weight: 850; font-size: .88rem; }
+    .bar-note { display: block; color: var(--muted); font-weight: 550; font-size: .74rem; margin-top: 2px; }
+    .bar-shell { min-height: 46px; padding: 5px; border: 1px solid var(--border); border-radius: 14px; background: var(--bar-bg); overflow: hidden; }
+    .bar { height: 34px; position: relative; }
+    .zero-axis {
+      position: absolute; top: -4px; bottom: -4px; width: 1px; background: rgba(238,242,247,.34);
+      z-index: 3; border-radius: 1px;
+    }
+    body.light .zero-axis { background: rgba(20,32,51,.24); }
+    .segment {
+      position: absolute; top: 0; bottom: 0; min-width: 2px; border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      padding: 0 5px; color: white; font-size: .74rem; font-weight: 900; overflow: hidden; white-space: nowrap;
+      text-shadow: 0 1px 1px rgba(0,0,0,.28); cursor: default;
+    }
+    .segment.small span { display: none; }
+    .seg-deduct { background: var(--deduct); }
+    .seg-deduct-pref { background: var(--deduct-2); color: #08101d; text-shadow: none; }
+    .seg-unused { background: var(--unused); }
+    .seg-basis { background: var(--basis); }
+    .seg-tax-drag { background: var(--tax-drag); }
+    .seg-ord-10 { background: var(--ordinary-10); color: #251800; text-shadow: none; }
+    .seg-ord-12 { background: var(--ordinary-12); color: #251800; text-shadow: none; }
+    .seg-ord-22 { background: var(--ordinary-22); }
+    .seg-ord-24 { background: var(--ordinary-24); }
+    .seg-ord-32 { background: var(--ordinary-32); }
+    .seg-ord-35 { background: var(--ordinary-35); }
+    .seg-ord-37 { background: var(--ordinary-37); }
+    .seg-ltcg-0 { background: var(--ltcg-0); color: #04160c; text-shadow: none; }
+    .seg-ltcg-15 { background: var(--ltcg-15); }
+    .seg-ltcg-20 { background: var(--ltcg-20); }
+    .bar-total { color: var(--muted); text-align: right; font-weight: 850; font-size: .84rem; }
+    @media (max-width: 640px) { .bar-total { text-align: left; } }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 8px 13px; margin-top: 2px; color: var(--muted); font-size: .78rem; }
+    .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 7px; border-bottom: 1px solid var(--border); text-align: right; font-size: .84rem; }
+    th:first-child, td:first-child { text-align: left; }
+    th { color: var(--muted); font-size: .73rem; text-transform: uppercase; letter-spacing: .06em; }
+    tfoot td { font-weight: 900; color: var(--text); }
+
+    details.advanced { border-top: 0; }
+    details.advanced summary { cursor: pointer; list-style: none; padding: 18px; color: var(--text); font-weight: 900; }
+    details.advanced summary::-webkit-details-marker { display: none; }
+    .advanced-body { padding: 0 18px 18px; display: grid; gap: 16px; }
+    .advanced-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+    .btn {
+      border: 1px solid var(--border); background: var(--input-bg); color: var(--text); border-radius: 11px;
+      padding: 9px 12px; cursor: pointer; font-weight: 850;
+    }
+    .btn:hover { border-color: var(--accent); color: var(--accent); }
+    .bracket-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; align-items: start; }
+    @media (max-width: 900px) { .bracket-grid { grid-template-columns: 1fr; } }
+    .status-column { display: grid; gap: 14px; }
+    .status-column-title { margin: 0; color: var(--accent); font-size: .95rem; font-weight: 950; letter-spacing: .02em; }
+    .subcard { border: 1px solid var(--border); background: var(--subcard-bg); border-radius: 14px; padding: 13px; }
+    .subcard h3 { margin: 0 0 9px; font-size: .92rem; color: var(--heading-soft); }
+    .advanced input { padding: 7px 8px; border-radius: 9px; font-size: .8rem; }
+    .advanced th, .advanced td { padding: 5px; }
+
+    .explain { color: var(--muted); font-size: .88rem; }
+    .callout { border: 1px solid rgba(124,156,255,.34); border-radius: 14px; background: rgba(124,156,255,.08); padding: 13px; color: var(--text); }
+    .disclaimer { color: var(--muted); font-size: .82rem; border-left: 4px solid var(--bad); padding-left: 12px; }
+    .disclaimer strong { color: var(--bad); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <div class="eyebrow">2026 Federal Tax Stack</div>
+        <button class="btn theme-toggle" id="themeToggle" type="button" aria-pressed="false">☀️ Light mode</button>
+      </div>
+      <h1>Retirement-income tax stack visualizer</h1>
+      <p class="subtitle">See how ordinary income fills the tax stack first, how qualified dividends and long-term capital gains sit on top, how deductions shield income, and how non-taxable basis can fund spending without entering taxable income.</p>
+    </header>
+
+    <main class="app-grid">
+      <section class="card" aria-label="Inputs">
+        <div class="form-section">
+          <h2 class="card-title"><span>⚙️ Inputs</span><span class="pill">Federal only</span></h2>
+          <div class="field">
+            <label>Filing status</label>
+            <div class="segmented">
+              <label><input type="radio" name="filingStatus" value="single" checked><span>Single</span></label>
+              <label><input type="radio" name="filingStatus" value="mfj"><span>MFJ</span></label>
+            </div>
+          </div>
+          <div class="field">
+            <label>Deduction type <span class="tip" tabindex="0" data-tip="Deductions reduce taxable income. This visualizer applies them against ordinary income first, then against preferential income if any deduction remains.">?</span></label>
+            <div class="segmented">
+              <label><input type="radio" name="deductionType" value="standard"><span>Standard</span></label>
+              <label><input type="radio" name="deductionType" value="itemized" checked><span>Itemized</span></label>
+            </div>
+          </div>
+          <div class="field" id="itemizedField">
+            <label for="itemizedDeduction">Itemized deduction amount</label>
+            <input id="itemizedDeduction" type="number" min="0" step="100" value="35000">
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-title">Ordinary income <span class="tip" tabindex="0" data-tip="Ordinary income is taxed under the regular federal income tax brackets. Examples include interest, short-term gains, IRA/401(k) withdrawals, and many rental/earned-income items.">?</span></div>
+          <div class="control-grid">
+            <div class="field"><label for="rentalIncome">Rental income</label><input id="rentalIncome" type="number" min="0" step="100" value="20000"></div>
+            <div class="field"><label for="interestIncome">Interest / Treasury / MMF</label><input id="interestIncome" type="number" min="0" step="100" value="0"></div>
+            <div class="field"><label for="shortTermGains">Short-term gains</label><input id="shortTermGains" type="number" min="0" step="100" value="0"></div>
+            <div class="field"><label for="iraWithdrawals">IRA / 401(k) withdrawals</label><input id="iraWithdrawals" type="number" min="0" step="100" value="0"></div>
+            <div class="field" style="grid-column: 1 / -1;"><label for="otherOrdinary">Other ordinary income</label><input id="otherOrdinary" type="number" min="0" step="100" value="0"></div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-title">Preferential income</div>
+          <div class="control-grid">
+            <div class="field"><label for="qualifiedDividends">Qualified dividends <span class="tip" tabindex="0" data-tip="Qualified dividends generally receive the same preferential federal rates as long-term capital gains: 0%, 15%, or 20%, depending on total taxable income.">?</span></label><input id="qualifiedDividends" type="number" min="0" step="100" value="60000"></div>
+            <div class="field"><label for="longTermGains">Long-term capital gains</label><input id="longTermGains" type="number" min="0" step="100" value="40000"></div>
+          </div>
+          <p class="hint">QD/LTCG stack on top of ordinary taxable income when determining their 0%, 15%, and 20% buckets.</p>
+        </div>
+
+        <div class="form-section">
+          <div class="section-title">Non-taxable spending sources</div>
+          <div class="field">
+            <label for="basisAmount">Cash / basis / Roth / other non-taxable <span class="tip" tabindex="0" data-tip="Basis means dollars that have already been taxed or are otherwise not taxable when spent, such as cash savings, stock cost basis, or Roth contribution basis.">?</span></label>
+            <input id="basisAmount" type="number" min="0" step="100" value="80000">
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-title">Spending target</div>
+          <div class="field"><label for="targetSpending">Optional target spending amount</label><input id="targetSpending" type="number" min="0" step="1000" value="200000"></div>
+          <p class="hint">Gap/surplus is measured after federal tax is paid.</p>
+        </div>
+      </section>
+
+      <section class="right-stack">
+        <section class="card pad">
+          <h2 class="card-title"><span>📊 Summary</span><span class="pill" id="taxYearPill">2026 defaults</span></h2>
+          <div class="summary-grid" id="summaryGrid"></div>
+        </section>
+
+        <section class="card pad">
+          <h2 class="card-title"><span>📚 Tax stack visualization</span><span class="pill" id="scalePill"></span></h2>
+          <div class="stack-wrap" id="stackViz"></div>
+          <div class="legend" id="legend"></div>
+        </section>
+
+        <section class="card">
+          <details class="advanced" id="advancedSettings">
+            <summary>⚙️ Advanced settings — brackets, rates, deductions</summary>
+            <div class="advanced-body">
+              <div class="advanced-head">
+                <p class="hint" style="margin:0">Edit 2026 assumptions for Single and MFJ. Use 999999999 for “over”.</p>
+                <button class="btn" id="resetDefaults" type="button">Reset to 2026 defaults</button>
+              </div>
+              <div class="bracket-grid" id="advancedTables"></div>
+            </div>
+          </details>
+        </section>
+
+        <section class="two-col">
+          <div class="card pad">
+            <h2 class="card-title"><span>🧮 Tax by rate</span></h2>
+            <div id="taxTables"></div>
+          </div>
+          <div class="card pad">
+            <h2 class="card-title"><span>💡 Reading the stack</span></h2>
+            <div class="callout explain">
+              <strong>0% LTCG room</strong> is the remaining taxable-income space under the 0% qualified-dividend / long-term-capital-gain threshold. Ordinary taxable income uses that space first, so QD/LTCG only get 0% treatment for the portion that still fits below the threshold.
+            </div>
+            <p class="explain">Deductions are shown as a blue shield. The taxable row then begins with ordinary-income bracket layers, followed by QD/LTCG layers. Purple basis is cash-flow support, not taxable income.</p>
+            <p class="disclaimer"><strong>Educational federal tax visualization only.</strong> Does not include state tax, AMT, NIIT, ACA subsidy effects, IRMAA, passive activity loss limits, QBI, depreciation recapture, credits, or phaseouts.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // ==================== constants / defaults ====================
+    const DEFAULT_2026 = Object.freeze({
+      standardDeduction: { single: 16100, mfj: 32200 },
+      ordinaryBrackets: {
+        single: [
+          { rate: 10, from: 0, to: 12400 },
+          { rate: 12, from: 12400, to: 50400 },
+          { rate: 22, from: 50400, to: 105700 },
+          { rate: 24, from: 105700, to: 201775 },
+          { rate: 32, from: 201775, to: 256225 },
+          { rate: 35, from: 256225, to: 640600 },
+          { rate: 37, from: 640600, to: 999999999 }
+        ],
+        mfj: [
+          { rate: 10, from: 0, to: 24800 },
+          { rate: 12, from: 24800, to: 100800 },
+          { rate: 22, from: 100800, to: 211400 },
+          { rate: 24, from: 211400, to: 403550 },
+          { rate: 32, from: 403550, to: 512450 },
+          { rate: 35, from: 512450, to: 768700 },
+          { rate: 37, from: 768700, to: 999999999 }
+        ]
+      },
+      ltcgBrackets: {
+        single: [
+          { rate: 0, from: 0, to: 49450 },
+          { rate: 15, from: 49450, to: 545500 },
+          { rate: 20, from: 545500, to: 999999999 }
+        ],
+        mfj: [
+          { rate: 0, from: 0, to: 98900 },
+          { rate: 15, from: 98900, to: 613700 },
+          { rate: 20, from: 613700, to: 999999999 }
+        ]
+      }
+    });
+
+    let taxConfig = deepClone(DEFAULT_2026);
+
+    function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
+    function money(n) {
+      const rounded = Math.round((Number(n) || 0));
+      const sign = rounded < 0 ? '-' : '';
+      return `${sign}$${Math.abs(rounded).toLocaleString('en-US')}`;
+    }
+    function pct(n) { return `${(Number(n) || 0).toFixed(1)}%`; }
+    function compactMoney(n) {
+      const value = Number(n) || 0;
+      const sign = value < 0 ? '-' : '';
+      const abs = Math.abs(value);
+      const format = (scaled, suffix) => {
+        const rounded = Math.round(scaled * 10) / 10;
+        const text = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+        return `${sign}$${text}${suffix}`;
+      };
+      if (abs >= 1_000_000) return format(abs / 1_000_000, 'M');
+      if (abs >= 1_000) return format(abs / 1_000, 'K');
+      return `${sign}$${Math.round(abs).toLocaleString('en-US')}`;
+    }
+    function cssRate(rate, prefix) { return `${prefix}-${String(rate).replace('.', '-')}`; }
+
+    // ==================== tax calculation (pure) ====================
+    function taxByBrackets(amount, brackets) {
+      const taxable = Math.max(0, Number(amount) || 0);
+      const segments = [];
+      for (const b of brackets) {
+        const from = Number(b.from) || 0;
+        const to = Number(b.to) || 0;
+        const width = Math.max(0, Math.min(taxable, to) - from);
+        if (width > 0) {
+          segments.push({ rate: Number(b.rate) || 0, amount: width, tax: width * (Number(b.rate) || 0) / 100, from, to });
+        }
+      }
+      return { segments, tax: segments.reduce((sum, s) => sum + s.tax, 0) };
+    }
+
+    function preferentialTaxByBrackets(preferentialTaxable, ordinaryTaxable, ltcgBrackets) {
+      const pref = Math.max(0, Number(preferentialTaxable) || 0);
+      const base = Math.max(0, Number(ordinaryTaxable) || 0);
+      const top = base + pref;
+      const segments = [];
+      for (const b of ltcgBrackets) {
+        const from = Number(b.from) || 0;
+        const to = Number(b.to) || 0;
+        const amount = Math.max(0, Math.min(top, to) - Math.max(base, from));
+        if (amount > 0) {
+          segments.push({ rate: Number(b.rate) || 0, amount, tax: amount * (Number(b.rate) || 0) / 100, from, to });
+        }
+      }
+      return { segments, tax: segments.reduce((sum, s) => sum + s.tax, 0) };
+    }
+
+    function calculateTaxStack(input, config) {
+      const filing = input.filingStatus;
+      const standardDeduction = config.standardDeduction[filing];
+      const deduction = input.deductionType === 'standard' ? standardDeduction : Math.max(0, input.itemizedDeduction);
+
+      const ordinaryGross = Math.max(0, input.rentalIncome) + Math.max(0, input.interestIncome) + Math.max(0, input.shortTermGains) + Math.max(0, input.iraWithdrawals) + Math.max(0, input.otherOrdinary);
+      const preferentialGross = Math.max(0, input.qualifiedDividends) + Math.max(0, input.longTermGains);
+      const basis = Math.max(0, input.basisAmount);
+      const grossTaxRelevantIncome = ordinaryGross + preferentialGross;
+
+      const deductionApplied = Math.min(deduction, grossTaxRelevantIncome);
+      const deductionAgainstOrdinary = Math.min(ordinaryGross, deductionApplied);
+      const deductionAgainstPreferential = Math.min(preferentialGross, Math.max(0, deductionApplied - deductionAgainstOrdinary));
+      const unusedDeduction = Math.max(0, deduction - deductionApplied);
+
+      const ordinaryTaxable = Math.max(0, ordinaryGross - deductionAgainstOrdinary);
+      const preferentialTaxable = Math.max(0, preferentialGross - deductionAgainstPreferential);
+      const taxableIncome = ordinaryTaxable + preferentialTaxable;
+
+      const ordinaryResult = taxByBrackets(ordinaryTaxable, config.ordinaryBrackets[filing]);
+      const preferentialResult = preferentialTaxByBrackets(preferentialTaxable, ordinaryTaxable, config.ltcgBrackets[filing]);
+      const totalTax = ordinaryResult.tax + preferentialResult.tax;
+      const totalCashAvailable = ordinaryGross + preferentialGross + basis;
+      const afterTaxCash = totalCashAvailable - totalTax;
+      const targetGapSurplus = afterTaxCash - Math.max(0, input.targetSpending);
+
+      const zeroBracket = config.ltcgBrackets[filing].find(b => Number(b.rate) === 0);
+      const zeroRoom = zeroBracket ? Math.max(0, Number(zeroBracket.to) - taxableIncome) : 0;
+
+      return {
+        filing,
+        deductionType: input.deductionType,
+        standardDeduction,
+        deduction,
+        deductionApplied,
+        deductionAgainstOrdinary,
+        deductionAgainstPreferential,
+        unusedDeduction,
+        ordinaryGross,
+        preferentialGross,
+        grossTaxRelevantIncome,
+        ordinaryTaxable,
+        preferentialTaxable,
+        taxableIncome,
+        basis,
+        ordinaryResult,
+        preferentialResult,
+        totalTax,
+        ordinaryTax: ordinaryResult.tax,
+        preferentialTax: preferentialResult.tax,
+        totalCashAvailable,
+        afterTaxCash,
+        targetSpending: Math.max(0, input.targetSpending),
+        targetGapSurplus,
+        effectiveRateTaxable: taxableIncome > 0 ? totalTax / taxableIncome * 100 : 0,
+        effectiveRateTotalCash: totalCashAvailable > 0 ? totalTax / totalCashAvailable * 100 : 0,
+        zeroRoom
+      };
+    }
+
+    // ==================== input parsing ====================
+    function num(id) { return Number(document.getElementById(id).value) || 0; }
+    function parseInputs() {
+      return {
+        filingStatus: document.querySelector('input[name="filingStatus"]:checked').value,
+        deductionType: document.querySelector('input[name="deductionType"]:checked').value,
+        itemizedDeduction: num('itemizedDeduction'),
+        rentalIncome: num('rentalIncome'),
+        interestIncome: num('interestIncome'),
+        shortTermGains: num('shortTermGains'),
+        iraWithdrawals: num('iraWithdrawals'),
+        otherOrdinary: num('otherOrdinary'),
+        qualifiedDividends: num('qualifiedDividends'),
+        longTermGains: num('longTermGains'),
+        basisAmount: num('basisAmount'),
+        targetSpending: num('targetSpending')
+      };
+    }
+
+    // ==================== rendering ====================
+    function renderSummary(r) {
+      const gapClass = r.targetGapSurplus >= 0 ? 'good' : 'bad';
+      const gapLabel = r.targetGapSurplus >= 0 ? 'Surplus vs target' : 'Gap vs target';
+      const metrics = [
+        ['Total cash available', money(r.totalCashAvailable), 'accent'],
+        ['Taxable income', money(r.taxableIncome), '', 'Total ordinary plus preferential income remaining after deductions. Non-taxable basis is not included.'],
+        ['Ordinary taxable income', money(r.ordinaryTaxable), ''],
+        ['Preferential taxable income', money(r.preferentialTaxable), ''],
+        ['Federal ordinary tax', money(r.ordinaryTax), ''],
+        ['Federal LTCG/QD tax', money(r.preferentialTax), ''],
+        ['Total federal tax', money(r.totalTax), 'bad'],
+        ['After-tax cash', money(r.afterTaxCash), 'good'],
+        [gapLabel, money(Math.abs(r.targetGapSurplus)), gapClass],
+        ['Effective rate on taxable income', pct(r.effectiveRateTaxable), ''],
+        ['Effective rate on total cash', pct(r.effectiveRateTotalCash), ''],
+        ['Remaining 0% LTCG room', money(r.zeroRoom), 'good', 'Remaining taxable-income space before the first LTCG/QD bracket is exhausted. Additional QD/LTCG may fit here at 0% if ordinary income does not fill it first.']
+      ];
+      document.getElementById('summaryGrid').innerHTML = metrics.map(([label, value, cls, tip]) => `
+        <div class="metric ${cls}">
+          <div class="label">${label}${tip ? ` <span class="tip" tabindex="0" data-tip="${tip}">?</span>` : ''}</div>
+          <div class="value">${value}</div>
+        </div>`).join('');
+    }
+
+    function segmentHtml(seg, domain, start, end) {
+      if (seg.amount <= 0 || domain.max <= domain.min) return '';
+      const range = domain.max - domain.min;
+      const left = (start - domain.min) / range * 100;
+      const width = Math.max(.45, (end - start) / range * 100);
+      const small = width < 4 ? ' small' : '';
+      const displayAmount = seg.displayAmount ?? seg.amount;
+      return `<div class="segment ${seg.cls}${small}" style="left:${left}%;width:${width}%" title="${seg.title || seg.label}: ${money(displayAmount)}" aria-label="${seg.title || seg.label}: ${money(displayAmount)}"><span>${compactMoney(displayAmount)}</span></div>`;
+    }
+
+    function renderBarRow(label, note, segments, total, domain) {
+      let positiveCursor = 0;
+      let negativeCursor = 0;
+      const range = domain.max - domain.min;
+      const zeroLeft = (0 - domain.min) / range * 100;
+      const segmentHtmls = segments.map(seg => {
+        if (seg.negative) {
+          const start = negativeCursor - seg.amount;
+          const end = negativeCursor;
+          negativeCursor = start;
+          return segmentHtml(seg, domain, start, end);
+        }
+        const start = positiveCursor;
+        const end = positiveCursor + seg.amount;
+        positiveCursor = end;
+        return segmentHtml(seg, domain, start, end);
+      }).join('');
+      return `
+        <div class="bar-row">
+          <div class="bar-label">${label}<span class="bar-note">${note}</span></div>
+          <div class="bar-shell"><div class="bar"><div class="zero-axis" style="left:${zeroLeft}%" title="Zero"></div>${segmentHtmls}</div></div>
+          <div class="bar-total">${money(total)}</div>
+        </div>`;
+    }
+
+    function renderStack(r) {
+      const positiveMax = Math.max(1, r.deductionApplied + r.unusedDeduction, r.taxableIncome, r.basis);
+      const domain = { min: r.totalTax > 0 ? -r.totalTax : -positiveMax * 0.03, max: positiveMax * 1.08 };
+      document.getElementById('scalePill').textContent = `After-tax cash ${money(r.afterTaxCash)}`;
+
+      const deductionSegments = [
+        { label: 'Ordinary shield', amount: r.deductionAgainstOrdinary, cls: 'seg-deduct', title: 'Deduction applied against ordinary income first' },
+        { label: 'QD/LTCG shield', amount: r.deductionAgainstPreferential, cls: 'seg-deduct-pref', title: 'Remaining deduction applied against qualified dividends / long-term gains' },
+        { label: 'Unused', amount: r.unusedDeduction, cls: 'seg-unused', title: 'Deduction not used because income is below the deduction' }
+      ];
+
+      const ordinarySegments = r.ordinaryResult.segments.map(s => ({ label: `${s.rate}% ordinary`, amount: s.amount, cls: `seg-ord-${String(s.rate).replace('.', '-')}` }));
+      const prefSegments = r.preferentialResult.segments.map(s => ({ label: `${s.rate}% QD/LTCG`, amount: s.amount, cls: `seg-ltcg-${String(s.rate).replace('.', '-')}` }));
+      const taxableSegments = ordinarySegments.concat(prefSegments);
+      const basisSegments = [{ label: 'Non-taxable basis', amount: r.basis, cls: 'seg-basis', title: 'Cash / basis / Roth contribution basis' }];
+      const taxSegments = [{ label: 'Federal tax', amount: r.totalTax, displayAmount: -r.totalTax, negative: true, cls: 'seg-tax-drag', title: 'Federal tax paid from available cash' }];
+
+      document.getElementById('stackViz').innerHTML = [
+        renderBarRow('Deduction shield', 'reduces taxable income', deductionSegments, r.deductionApplied + r.unusedDeduction, domain),
+        renderBarRow('Taxable stack', 'ordinary first, QD/LTCG on top', taxableSegments, r.taxableIncome, domain),
+        renderBarRow('Non-taxable cash', 'spending support, not income tax', basisSegments, r.basis, domain),
+        renderBarRow('Federal tax drag', 'subtracted from cash available', taxSegments, -r.totalTax, domain)
+      ].join('');
+
+      const legend = buildLegend(r);
+      document.getElementById('legend').innerHTML = legend.map(([color, label]) => `<span class="legend-item"><span class="swatch" style="background:${color}"></span>${label}</span>`).join('');
+    }
+
+    function rateKey(rate) { return String(rate).replace('.', '-'); }
+
+    function addLegendItem(items, color, label) {
+      if (!items.some(item => item[1] === label)) items.push([color, label]);
+    }
+
+    function buildLegend(r) {
+      const items = [];
+      if (r.deductionAgainstOrdinary > 0) addLegendItem(items, 'var(--deduct)', 'Deducted ordinary income');
+      if (r.deductionAgainstPreferential > 0) addLegendItem(items, 'var(--deduct-2)', 'Deducted QD/LTCG');
+      if (r.unusedDeduction > 0) addLegendItem(items, 'var(--unused)', 'Unused deduction');
+      r.ordinaryResult.segments.forEach(s => addLegendItem(items, `var(--ordinary-${rateKey(s.rate)}, var(--accent))`, `${s.rate}% ordinary`));
+      r.preferentialResult.segments.forEach(s => addLegendItem(items, `var(--ltcg-${rateKey(s.rate)}, var(--accent-2))`, `${s.rate}% QD/LTCG`));
+      if (r.basis > 0) addLegendItem(items, 'var(--basis)', 'Basis / cash');
+      if (r.totalTax > 0) addLegendItem(items, 'var(--tax-drag)', 'Federal tax drag (negative cash flow)');
+      return items;
+    }
+
+    function renderTaxTables(r) {
+      const ordRows = r.ordinaryResult.segments.length ? r.ordinaryResult.segments.map(s => `<tr><td>${s.rate}% ordinary</td><td>${money(s.amount)}</td><td>${money(s.tax)}</td></tr>`).join('') : '<tr><td>No ordinary taxable income</td><td>$0</td><td>$0</td></tr>';
+      const prefRows = r.preferentialResult.segments.length ? r.preferentialResult.segments.map(s => `<tr><td>${s.rate}% QD/LTCG</td><td>${money(s.amount)}</td><td>${money(s.tax)}</td></tr>`).join('') : '<tr><td>No preferential taxable income</td><td>$0</td><td>$0</td></tr>';
+      document.getElementById('taxTables').innerHTML = `
+        <table aria-label="Tax by rate">
+          <thead><tr><th>Layer</th><th>Amount</th><th>Tax</th></tr></thead>
+          <tbody>${ordRows}${prefRows}</tbody>
+          <tfoot><tr><td>Total federal tax</td><td>${money(r.taxableIncome)}</td><td>${money(r.totalTax)}</td></tr></tfoot>
+        </table>`;
+    }
+
+    function renderAdvancedTables() {
+      const holder = document.getElementById('advancedTables');
+      const statusName = { single: 'Single', mfj: 'Married Filing Jointly' };
+      holder.innerHTML = ['single', 'mfj'].map(status => `
+        <div class="status-column">
+          <h3 class="status-column-title">${statusName[status]}</h3>
+          <div class="subcard"><h3>Standard deduction</h3>
+            <input type="number" min="0" step="100" data-kind="standardDeduction" data-status="${status}" value="${taxConfig.standardDeduction[status]}">
+          </div>
+          <div class="subcard"><h3>Ordinary brackets</h3>${bracketTable('ordinaryBrackets', status, taxConfig.ordinaryBrackets[status])}</div>
+          <div class="subcard"><h3>LTCG / QD brackets</h3>${bracketTable('ltcgBrackets', status, taxConfig.ltcgBrackets[status])}</div>
+        </div>
+      `).join('');
+    }
+
+    function bracketTable(kind, status, brackets) {
+      return `<table><thead><tr><th>Rate %</th><th>From</th><th>To</th></tr></thead><tbody>${brackets.map((b, i) => `
+        <tr>
+          <td><input type="number" step=".1" data-kind="${kind}" data-status="${status}" data-index="${i}" data-field="rate" value="${b.rate}"></td>
+          <td><input type="number" step="100" data-kind="${kind}" data-status="${status}" data-index="${i}" data-field="from" value="${b.from}"></td>
+          <td><input type="number" step="100" data-kind="${kind}" data-status="${status}" data-index="${i}" data-field="to" value="${b.to}"></td>
+        </tr>`).join('')}</tbody></table>`;
+    }
+
+    // ==================== event handlers ====================
+    function recalc() {
+      const input = parseInputs();
+      document.getElementById('itemizedField').style.display = input.deductionType === 'itemized' ? 'block' : 'none';
+      const result = calculateTaxStack(input, taxConfig);
+      renderSummary(result);
+      renderStack(result);
+      renderTaxTables(result);
+    }
+
+    function handleAdvancedInput(e) {
+      const el = e.target;
+      if (!el.matches('input[data-kind]')) return;
+      const value = Math.max(0, Number(el.value) || 0);
+      const { kind, status, index, field } = el.dataset;
+      if (kind === 'standardDeduction') taxConfig.standardDeduction[status] = value;
+      else taxConfig[kind][status][Number(index)][field] = value;
+      recalc();
+    }
+
+    function applyTheme(theme) {
+      const isLight = theme === 'light';
+      document.body.classList.toggle('light', isLight);
+      const btn = document.getElementById('themeToggle');
+      btn.textContent = isLight ? '🌙 Dark mode' : '☀️ Light mode';
+      btn.setAttribute('aria-pressed', String(isLight));
+    }
+
+    function initTheme() {
+      const saved = localStorage.getItem('taxStackTheme');
+      const preferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      applyTheme(saved || preferred);
+      document.getElementById('themeToggle').addEventListener('click', () => {
+        const next = document.body.classList.contains('light') ? 'dark' : 'light';
+        localStorage.setItem('taxStackTheme', next);
+        applyTheme(next);
+      });
+    }
+
+    function init() {
+      initTheme();
+      renderAdvancedTables();
+      document.querySelectorAll('input').forEach(el => el.addEventListener('input', recalc));
+      document.querySelectorAll('input[type="radio"]').forEach(el => el.addEventListener('change', recalc));
+      document.getElementById('advancedTables').addEventListener('input', handleAdvancedInput);
+      document.getElementById('resetDefaults').addEventListener('click', () => {
+        taxConfig = deepClone(DEFAULT_2026);
+        renderAdvancedTables();
+        recalc();
+      });
+      recalc();
+      runConsoleTests();
+    }
+
+    // ==================== inline assertions / tests ====================
+    function approx(actual, expected, label, tolerance = 0.01) {
+      console.assert(Math.abs(actual - expected) <= tolerance, `${label}: expected ${expected}, got ${actual}`);
+    }
+
+    function runConsoleTests() {
+      console.group('Tax stack assertions');
+      const cfg = deepClone(DEFAULT_2026);
+      const base = { filingStatus: 'single', deductionType: 'standard', itemizedDeduction: 0, rentalIncome: 0, interestIncome: 0, shortTermGains: 0, iraWithdrawals: 0, otherOrdinary: 0, qualifiedDividends: 0, longTermGains: 0, basisAmount: 0, targetSpending: 0 };
+
+      let r = calculateTaxStack(base, cfg);
+      approx(r.taxableIncome, 0, 'zero income taxable');
+      approx(r.totalTax, 0, 'zero income tax');
+
+      r = calculateTaxStack({ ...base, rentalIncome: 10000 }, cfg);
+      approx(r.ordinaryTaxable, 0, 'ordinary below deduction');
+      approx(r.totalTax, 0, 'ordinary below deduction tax');
+
+      r = calculateTaxStack({ ...base, deductionType: 'itemized', itemizedDeduction: 0, qualifiedDividends: 60000 }, cfg);
+      approx(r.preferentialResult.segments.find(s => s.rate === 0).amount, 49450, 'preferential 0% threshold');
+      approx(r.preferentialResult.segments.find(s => s.rate === 15).amount, 10550, 'preferential crosses to 15%');
+
+      const single = calculateTaxStack({ ...base, rentalIncome: 100000 }, cfg);
+      const mfj = calculateTaxStack({ ...base, filingStatus: 'mfj', rentalIncome: 100000 }, cfg);
+      console.assert(mfj.totalTax < single.totalTax, 'MFJ should owe less than Single at $100k ordinary with standard deduction');
+
+      const standard = calculateTaxStack({ ...base, rentalIncome: 50000 }, cfg);
+      const itemized = calculateTaxStack({ ...base, deductionType: 'itemized', itemizedDeduction: 35000, rentalIncome: 50000 }, cfg);
+      console.assert(itemized.totalTax < standard.totalTax, 'larger itemized deduction should reduce tax');
+      console.groupEnd();
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

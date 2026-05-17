@@ -1,0 +1,67 @@
+name: Regenerate Index
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if only index.html changed
+        id: check
+        run: |
+          changed=$(git diff --name-only HEAD~1 HEAD)
+          echo "Changed files: $changed"
+          if [ "$changed" = "index.html" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create branch for index regeneration
+        if: steps.check.outputs.skip != 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b chore/regenerate-index
+
+      - uses: anthropics/claude-code-action@v1
+        if: steps.check.outputs.skip != 'true'
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Regenerate index.html for this static website. Please:
+            1. Read all .html files in the root directory (excluding index.html itself)
+            2. Analyze what each page does based on its content
+            3. Write a new index.html with a clean, modern design that:
+               - Lists each HTML file as a clickable link
+               - Includes a 1-2 sentence description per file based on the actual content you read
+               - Uses modern CSS (responsive, good typography and spacing, respects the user's system light/dark preference via prefers-color-scheme)
+            Only write index.html — do not commit or modify any other files.
+          claude_args: --allowedTools "Read,Write"
+
+      - name: Commit and open PR
+        if: steps.check.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git add index.html
+          git commit -m "chore: regenerate index.html"
+          git push origin chore/regenerate-index --force
+
+          if ! gh pr view chore/regenerate-index --json state -q .state 2>/dev/null | grep -q OPEN; then
+            gh pr create \
+              --title "chore: regenerate index.html" \
+              --body "Automatically regenerated \`index.html\` after changes were pushed to \`main\`. Merge to publish." \
+              --base main \
+              --head chore/regenerate-index
+          fi
