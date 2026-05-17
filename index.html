@@ -12,7 +12,6 @@
       --surface: #f5f5f7;
       --surface-hover: #ebebed;
       --border: #d2d2d7;
-      --accent: #0066cc;
       --text: #1d1d1f;
       --muted: #6e6e73;
     }
@@ -23,7 +22,6 @@
         --surface: #1a1d27;
         --surface-hover: #22263a;
         --border: #2a2e42;
-        --accent: #6c8ef5;
         --text: #e8eaf2;
         --muted: #7c8aaa;
       }
@@ -61,21 +59,23 @@
       display: block;
       background: var(--surface);
       border: 1px solid var(--border);
+      border-left: 4px solid var(--card-accent, #d2d2d7);
       border-radius: 12px;
       padding: 1.25rem 1.5rem;
       text-decoration: none;
-      transition: background 0.15s, border-color 0.15s;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
     }
 
     a.card:hover {
       background: var(--surface-hover);
-      border-color: var(--accent);
+      border-left-color: var(--card-accent);
+      transform: translateX(2px);
     }
 
     .card-title {
       font-size: 1rem;
       font-weight: 600;
-      color: var(--accent);
+      color: var(--card-accent);
       margin-bottom: 0.25rem;
     }
 
@@ -89,21 +89,25 @@
   <div class="container">
     <h1>Tools</h1>
     <div class="list">
-      <a class="card" href="finger_next.html">
+      <a class="card" href="finger_next.html" style="--card-accent: #e05c3a;">
         <div class="card-title">Finger Finger</div>
         <div class="card-desc">A last-finger-standing touch game — place your finger and hold on as long as possible while competing against other players on the same screen.</div>
       </a>
-      <a class="card" href="fx.html">
+      <a class="card" href="fx.html" style="--card-accent: #2d9c6e;">
         <div class="card-title">Currency Converter</div>
         <div class="card-desc">A real-time currency converter that fetches live exchange rates, supporting a wide range of currencies with a clean, minimal interface.</div>
       </a>
-      <a class="card" href="tax-stack-claude.html">
+      <a class="card" href="tax-stack-claude.html" style="--card-accent: #7c5cbf;">
         <div class="card-title">Tax Stack Visualizer (Claude)</div>
         <div class="card-desc">An interactive 2026 federal tax bracket visualizer that shows exactly how income is taxed across marginal brackets, built with Claude.</div>
       </a>
-      <a class="card" href="tax-stack-codex.html">
+      <a class="card" href="tax-stack-codex.html" style="--card-accent: #5b8dd9;">
         <div class="card-title">Tax Stack Retirement Planner (Codex)</div>
         <div class="card-desc">A federal tax stack planner for modeling tax-efficient retirement withdrawal strategies across income brackets, built with Codex.</div>
+      </a>
+      <a class="card" href="https://cribbage.jamfactory.app" style="--card-accent: #c4963a;">
+        <div class="card-title">Cribbage</div>
+        <div class="card-desc">A full cribbage card game you can play in the browser, complete with scoring, pegging, and the crib.</div>
       </a>
     </div>
   </div>
