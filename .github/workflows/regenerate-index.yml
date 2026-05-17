@@ -1,8 +1,12 @@
 name: Regenerate Index
 
 on:
-  push:
+  pull_request:
+    types: [opened, synchronize]
     branches: [main]
+    paths:
+      - "*.html"
+      - "!index.html"
 
 jobs:
   regenerate:
@@ -14,94 +18,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
 
-      - name: Check if only index.html changed
-        id: check
-        run: |
-          changed=$(git diff --name-only HEAD~1 HEAD)
-          echo "Changed files: $changed"
-          if [ "$changed" = "index.html" ]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
 
-      - name: Install Claude Code CLI
-        if: steps.check.outputs.skip != 'true'
-        run: npm install -g @anthropic-ai/claude-code
-
-      - name: Generate index.html
-        if: steps.check.outputs.skip != 'true'
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          # Read all HTML files (except index.html) and inject into the prompt so
-          # Claude doesn't need file-reading tools in headless mode.
-          FILES_CONTENT=""
-          for file in *.html; do
-            [ "$file" = "index.html" ] && continue
-            FILES_CONTENT="${FILES_CONTENT}
-          === FILE: $file ===
-          $(cat "$file")
-          "
-          done
-
-          CLAUDE_PROMPT="You are generating an index page for a website. Your task:
-
-          1. Read the HTML files provided below and understand what each one does.
-          2. Generate a beautiful, modern index.html page with:
-             - A clean, professional design
-             - A list of all HTML files as clickable links
-             - A 1-2 sentence description per file based on its actual content
-             - Modern CSS (responsive, good typography and spacing, respects the user's system light/dark preference via prefers-color-scheme)
-
-          HTML files to index:
-          ${FILES_CONTENT}
-
-          IMPORTANT: Output ONLY the raw HTML code between these markers:
-          <START_HTML>
-          <!DOCTYPE html>
-          ...your complete HTML here...
-          </START_HTML>
-
-          Do not include any explanation, markdown, code fences, or other text outside these markers."
-
-          TEMP_OUTPUT=$(claude --print "$CLAUDE_PROMPT")
-
-          HTML_CONTENT=$(echo "$TEMP_OUTPUT" | sed -n '/<START_HTML>/,/<\/START_HTML>/p' | sed '/<START_HTML>/d' | sed '/<\/START_HTML>/d')
-
-          # Fallback: try markdown code fences
-          if [ -z "$HTML_CONTENT" ]; then
-            HTML_CONTENT=$(echo "$TEMP_OUTPUT" | sed -n '/^```html$/,/^```$/p' | sed '/^```/d')
-          fi
-
-          if [ -n "$HTML_CONTENT" ]; then
-            echo "$HTML_CONTENT" > index.html
-            echo "Successfully generated index.html"
-          else
-            echo "Error: Could not extract HTML from Claude response"
-            echo "--- Claude output ---"
-            echo "$TEMP_OUTPUT"
-            exit 1
-          fi
-
-      - name: Commit and open PR
-        if: steps.check.outputs.skip != 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b chore/regenerate-index
-          git add index.html
-          git commit -m "chore: regenerate index.html"
-          git push origin chore/regenerate-index --force
-
-          if ! gh pr view chore/regenerate-index --json state -q .state 2>/dev/null | grep -q OPEN; then
-            gh pr create \
-              --title "chore: regenerate index.html" \
-              --body "Automatically regenerated \`index.html\` after changes were pushed to \`main\`. Merge to publish." \
-              --base main \
-              --head chore/regenerate-index
-          fi
+            Regenerate index.html for this static website. Please:
+            1. Read all .html files in the root directory (excluding index.html itself)
+            2. Analyze what each page does based on its content
+            3. Write a new index.html with a clean, modern design that:
+               - Lists each HTML file as a clickable link
+               - Includes a 1-2 sentence description per file based on the actual content you read
+               - Uses modern CSS (responsive, good typography and spacing, respects the user's system light/dark preference via prefers-color-scheme)
+            4. Commit the updated index.html to this PR branch.
+          claude_args: --allowedTools "Read,Write,Edit,Bash(git:*)"
