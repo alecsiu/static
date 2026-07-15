@@ -459,12 +459,17 @@
         }
 
         function startCountdown() {
-            let count = settings.countdownDuration;
-            countdownDisplay.textContent = count;
             titleText.style.display = 'block';
             titleTextBottom.style.display = 'block';
             gameActive = true;
             startMovingFinger();
+            restartCountdown();
+        }
+
+        function restartCountdown() {
+            clearInterval(countdownInterval);
+            let count = settings.countdownDuration;
+            countdownDisplay.textContent = count;
 
             countdownInterval = setInterval(() => {
                 count--;
@@ -536,6 +541,8 @@
                 }, settings.colorChangeInterval);
                 colorIntervals.set(identifier, colorInterval);
             }
+
+            restartCountdown();
         }
 
         function handleTouchMove(e) {
