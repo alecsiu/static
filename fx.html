@@ -2,8 +2,24 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Currency Converter</title>
+    <meta name="description" content="Convert between currencies using recent exchange rates, with offline-friendly caching.">
+
+    <!-- Installable web app (Chrome / Edge / Android) -->
+    <link rel="manifest" href="fx.webmanifest">
+    <meta name="theme-color" content="#667eea">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Currency">
+
+    <!-- Installable web app (iOS / iPadOS: Share → Add to Home Screen) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Currency">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link rel="icon" type="image/png" sizes="192x192" href="fx-icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="fx-icon-512.png">
+    <link rel="apple-touch-icon" href="fx-apple-touch-icon.png">
     <style>
         * {
             margin: 0;
@@ -16,6 +32,11 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
+            padding-top: calc(20px + env(safe-area-inset-top));
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            padding-left: calc(20px + env(safe-area-inset-left));
+            padding-right: calc(20px + env(safe-area-inset-right));
+            -webkit-tap-highlight-color: transparent;
         }
 
         .container {
@@ -33,6 +54,39 @@
             color: #856404;
             font-size: 14px;
             animation: slideIn 0.3s ease;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        #cacheWarningText {
+            flex: 1 1 160px;
+            min-width: 0;
+        }
+
+        .refresh-btn {
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #856404;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #6d5003;
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.97);
         }
 
         @keyframes slideIn {
@@ -681,7 +735,10 @@
 <body>
     <div class="container">
         <h1>💱 Currency Converter</h1>
-        <div id="cacheWarning"></div>
+        <div id="cacheWarning">
+            <span id="cacheWarningText"></span>
+            <button type="button" id="refreshPageBtn" class="refresh-btn">🔄 Refresh</button>
+        </div>
         <div id="errorMessage"></div>
         <div id="loading" class="loading">Loading exchange rates...</div>
         <div id="converterCard" class="converter-card" style="display: none;">
@@ -996,8 +1053,9 @@
                 if (this.cacheAge && this.cacheAge > CACHE_DURATION) {
                     const hours = Math.floor(this.cacheAge / (60 * 60 * 1000));
                     const warning = document.getElementById('cacheWarning');
-                    warning.innerHTML = `⚠️ Exchange rates are ${hours}+ hours old. Using cached rates, refresh the page to get the latest.`;
-                    warning.style.display = 'block';
+                    document.getElementById('cacheWarningText').textContent =
+                        `⚠️ Exchange rates are ${hours}+ hours old. Using cached rates.`;
+                    warning.style.display = 'flex';
                 }
             }
 
@@ -1246,6 +1304,11 @@
             }
 
             setupEventListeners() {
+                const refreshPageBtn = document.getElementById('refreshPageBtn');
+                refreshPageBtn.addEventListener('click', () => {
+                    window.location.reload();
+                });
+
                 const amountInput = document.getElementById('amountInput');
                 const enterBtn = document.getElementById('enterBtn');
                 const clearBtn = document.getElementById('clearBtn');
@@ -1415,6 +1478,15 @@
                 document.getElementById('result0').innerHTML = '';
                 document.getElementById('result1').innerHTML = '';
             }
+        }
+
+        // Register the service worker so the app is installable and works offline.
+        // Scope is limited to fx.html so other pages on the site are unaffected.
+        if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('fx-sw.js', { scope: './fx.html' })
+                    .catch(err => console.error('Service worker registration failed:', err));
+            });
         }
 
         // Initialize the app when DOM is ready
