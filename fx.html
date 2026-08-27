@@ -118,7 +118,8 @@
         /* Row 1: Amount input with integrated currency suffix */
         .amount-row {
             display: grid;
-            grid-template-columns: 1fr;
+            /* minmax(0, 1fr) so the number input's intrinsic width can't widen the row */
+            grid-template-columns: minmax(0, 1fr);
             align-items: center;
             margin-bottom: 20px;
         }
@@ -139,6 +140,7 @@
 
         .amount-input {
             flex: 1;
+            min-width: 0;
             padding: 14px;
             border: none;
             background: transparent;
