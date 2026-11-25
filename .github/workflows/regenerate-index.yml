@@ -7,34 +7,31 @@ on:
     paths:
       - "*.html"
       - "!index.html"
+      - "external.json"
+      - "generate_index.py"
 
 jobs:
   regenerate:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
-      id-token: write
 
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
 
-      - uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt: |
-            REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
+      - name: Generate index.html
+        run: python3 generate_index.py
 
-            Regenerate index.html for this static website. Please:
-            1. Read all .html files in the root directory (excluding index.html itself)
-            2. Analyze what each page does based on its content
-            3. Write a new index.html with a clean, modern design that:
-               - Lists each HTML file as a clickable link
-               - Includes a 1-2 sentence description per file based on the actual content you read
-               - Uses modern CSS (responsive, good typography and spacing, respects the user's system light/dark preference via prefers-color-scheme)
-            4. Commit the updated index.html to this PR branch.
-          claude_args: --allowedTools "Read,Write,Edit,Bash(git:*)"
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "index.html is up to date"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add index.html
+            git commit -m "chore: regenerate index.html"
+            git push
+          fi

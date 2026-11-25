@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cuisine Atlas</title>
+<meta name="description" content="Interactive explorer for YouGov's 2018 survey of how much people in 24 countries like 34 world cuisines: heatmap, country and cuisine profiles, head-to-head comparisons and insights.">
+<style>
+:root{--bg:#faf8f4;--fg:#1d1b19;--mut:#6b655d;--card:#fff;--line:#e5dfd5;--acc:#c2410c;--chip:#f0ebe2}
+@media(prefers-color-scheme:dark){:root{--bg:#161412;--fg:#f1ece4;--mut:#a39b8f;--card:#201d1a;--line:#36312b;--acc:#fb923c;--chip:#2b2723}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:28px 20px 8px;max-width:1180px;margin:0 auto}
+h1{font:700 34px/1.1 ui-serif,Georgia,serif;margin:0 0 6px;letter-spacing:-.02em}
+header p{margin:0;color:var(--mut);max-width:760px}
+nav{display:flex;gap:6px;flex-wrap:wrap;max-width:1180px;margin:16px auto 0;padding:0 20px}
+nav button,.chip{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--fg);padding:7px 14px;border-radius:999px;cursor:pointer}
+nav button.on,.chip.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+main{max-width:1180px;margin:0 auto;padding:16px 20px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+.card h2{margin:0 0 2px;font-size:17px}
+.card .sub{color:var(--mut);font-size:13px;margin-bottom:10px}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px;font-size:13px;color:var(--mut)}
+.ctl select{font:inherit;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg)}
+.chip{padding:5px 11px;font-size:13px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px}
+.hm{overflow-x:auto}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font-family:inherit;fill:var(--fg)}
+.cell rect{stroke:var(--card);stroke-width:1.5}
+.cell text{font-size:11.5px;fill:#1b1a18;pointer-events:none}
+.cell.est rect{stroke:var(--fg);stroke-dasharray:3 2;stroke-width:1.2}
+svg.hov .cell{opacity:.28}svg.hov .cell.on{opacity:1}
+.mv{transition:transform .55s cubic-bezier(.3,.7,.2,1)}
+.lab{font-size:12.5px;cursor:pointer}.lab:hover{font-weight:700}
+.lab.sel{font-weight:700;fill:var(--acc)}
+#tip{position:fixed;pointer-events:none;background:var(--fg);color:var(--bg);padding:8px 11px;border-radius:8px;font-size:12.5px;max-width:260px;opacity:0;transition:opacity .1s;z-index:9}
+.legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);margin-top:10px}
+.legend i{display:block;height:10px;width:160px;border-radius:5px}
+ol.rank{margin:0;padding-left:20px}ol.rank li{padding:2px 0}
+ol.rank b{font-variant-numeric:tabular-nums}.m{color:var(--mut)}
+.pos{color:#1f8a4c}.neg{color:#c4472f}
+@media(prefers-color-scheme:dark){.pos{color:#5fd08a}.neg{color:#ff8a70}}
+footer{max-width:1180px;margin:0 auto;padding:0 20px 40px;color:var(--mut);font-size:12.5px}
+.big{font:700 28px/1 ui-serif,Georgia,serif}
+.stats{display:flex;gap:26px;flex-wrap:wrap;margin:6px 0 14px}.stats div span{display:block;color:var(--mut);font-size:12px;margin-top:3px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Cuisine Atlas</h1>
+  <p>How much do people in 24 countries like 34 world cuisines? Each number is the % of people who have tried a cuisine and say they like it (YouGov, May–Dec 2018). Explore it as a heatmap, by country, by cuisine, or head-to-head.</p>
+</header>
+<nav id="tabs"></nav>
+<main id="main"></main>
+<footer>Source: YouGov cuisine popularity survey. Values were transcribed from the published chart; cells with a dashed outline were hard to read and were reconstructed so each row matches its published average, so treat them as estimates. Averages shown here are computed from the grid.</footer>
+<div id="tip"></div>
+
+<script>
+// ---------- DATA ----------
+const COUNTRIES=["Philippines","Singapore","Australia","Taiwan","UAE","Hong Kong","Britain","Finland","India","France","USA","Norway","Sweden","Malaysia","Vietnam","Germany","Denmark","Spain","Saudi Arabia","Italy","Indonesia","Thailand","China","Japan"];
+// name | home country | published avg | values in COUNTRIES order
+const RAW=`Italian|Italy|84|90 89 90 81 87 81 91 87 80 93 88 83 92 74 72 89 86 94 78 99 70 69 59 85
+Chinese|China|78|88 94 86 87 69 91 86 81 77 80 84 77 74 73 78 73 71 54 62 57 80 95 88
+Japanese|Japan|71|90 94 74 92 58 93 57 63 57 70 61 66 73 81 58 61 57 43 62 72 90 54 94
+Thai|Thailand|70|76 91 85 76 61 84 75 77 65 70 68 78 91 75 68 73 56 31 52 51 98 44 48
+French|France|70|82 79 70 71 71 73 68 74 70 96 69 74 79 58 72 62 68 70 63 60 46 62 63 68
+Spanish|Spain|68|86 68 74 62 67 67 80 79 58 87 79 81 82 44 45 70 74 98 56 87 36 39 38 64
+American|USA|68|93 83 68 76 75 62 70 69 75 56 91 68 63 65 71 53 70 49 66 54 66 73 51 57
+Mexican||67|85 72 77 62 71 54 76 81 70 78 86 84 77 71 51 46 71 78 72 64 77 38 54 42 51
+Indian|India|62|55 77 74 60 71 48 84 71 93 71 55 75 67 70 44 62 67 52 76 57 49 27 26 63
+Turkish||57|61 63 71 49 77 45 67 68 56 62 43 62 65 58 47 64 50 53 85 47 65 32 47 39
+Korean||56|87 86 66 74 50 78 43 45 42 45 58 43 48 66 81 45 32 36 29 32 63 78 52 66
+Greek||56|57 49 77 48 55 47 74 77 46 75 69 75 85 31 32 79 69 62 51 71 27 23 32 22
+Vietnamese|Vietnam|55|66 67 75 63 39 77 53 55 42 74 59 56 54 45 96 57 63 38 18 36 34 67 37 44
+Hong Kong|Hong Kong|54|80 91 68 78 45 93 60 38 41 44 50 37 29 54 68 39 33 38 22 35 37 68 68 53
+German|Germany|52|59 64 63 62 47 65 51 63 49 51 63 52 57 35 51 87 37 43 38 40 37 54 45 46
+British|Britain|51|70 76 71 50 63 61 91 49 68 28 49 45 35 65 61 25 27 26 52 32 58 44 43 20
+Taiwanese|Taiwan|51|68 87 79 96 42 88 37 37 42 46 48 31 25 49 62 41 28 36 24 32 40 54 64 66
+Singaporean|Singapore|49|72 96 75 68 53 73 55 31 62 31 34 34 24 74 64 33 29 27 26 29 55 52 54 33
+Indonesian|Indonesia|49|59 84 71 49 47 46 54 43 48 44 39 43 44 80 39 50 44 34 46 35 97 26 31 32
+Malaysian|Malaysia|48|65 91 76 61 52 67 58 40 56 35 34 35 30 97 44 34 32 24 37 21 66 34 41 25
+Australian|Australia|48|74 74 89 49 52 58 52 47 59 35 43 41 34 54 57 36 42 27 32 35 41 48 41 28
+Moroccan||46|50 49 65 43 63 38 66 49 50 81 47 48 51 45 26 42 44 53 67 50 39 25 34 16
+Lebanese||46|40 50 71 35 82 31 58 42 54 67 47 48 67 43 26 35 39 43 84 45 35 22 31 13
+Caribbean||46|63 50 55 46 47 39 66 57 50 50 54 68 54 48 31 35 50 44 54 33 49 21 29 30 22
+Brazilian||46|59 45 56 43 48 41 49 47 49 58 55 48 40 26 47 49 42 56 39 66 28 29 42 33
+Swedish|Sweden|44|50 63 47 49 44 48 47 68 48 41 48 62 92 36 40 42 29 30 35 33 27 29 34 18
+Argentinian||43|55 35 53 42 45 36 46 42 43 54 48 41 24 35 60 45 77 29 75 25 24 37 16
+Danish|Denmark|41|51 48 47 39 39 40 42 56 41 35 41 67 62 33 40 36 85 20 29 25 28 29 32 14
+Emirati|UAE|37|51 43 43 48 84 28 23 22 63 30 23 24 22 51 49 27 18 27 71 24 53 29 29 14
+Norwegian|Norway|37|47 48 39 41 41 42 31 52 38 40 38 81 31 36 33 27 27 26 27 23 30 31 17
+Filipino|Philippines|36|97 41 56 35 48 29 29 37 39 31 45 40 25 33 38 30 26 25 25 29 25 29 21
+Saudi Arabian|Saudi Arabia|36|47 42 41 33 67 30 18 21 60 29 24 20 22 66 28 24 22 28 89 25 64 22 31 11
+Finnish|Finland|32|47 37 37 33 35 38 23 94 39 37 27 28 36 26 39 26 13 18 26 24 23 26 30 14
+Peruvian||32|47 33 44 33 37 31 27 30 39 39 44 30 27 19 37 28 21 50 23 39 21 16 28 16`;
+// rows where the chart was hard to read: [action, index]
+const FIX={Chinese:['ins',22],Japanese:['ins',14],Thai:['ins',21],Argentinian:['ins',19],Filipino:['ins',22],Norwegian:['ins',20],Mexican:['del',24]};
+
+// ---------- MODEL ----------
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+const std=a=>{const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)**2)))};
+const pearson=(a,b)=>{const ma=mean(a),mb=mean(b);let s=0,x=0,y=0;for(let i=0;i<a.length;i++){s+=(a[i]-ma)*(b[i]-mb);x+=(a[i]-ma)**2;y+=(b[i]-mb)**2}return s/Math.sqrt(x*y)};
+const R=RAW.split("\n").map(l=>{
+  const [name,home,avg,vs]=l.split("|");let v=vs.trim().split(/\s+/).map(Number);const est=new Set();
+  const f=FIX[name];
+  if(f&&f[0]==='del')v.splice(f[1],1);
+  if(f&&f[0]==='ins'){const x=Math.max(8,Math.min(99,Math.round(24*+avg-v.reduce((s,y)=>s+y,0))));v.splice(f[1],0,x);est.add(f[1])}
+  if(v.length!==24)console.warn("bad row",name,v.length);
+  return{name,home,pub:+avg,v,est,homeIdx:COUNTRIES.indexOf(home)};
+});
+const NR=R.length,NC=COUNTRIES.length;
+R.forEach(r=>{r.mean=mean(r.v);r.sd=std(r.v);r.min=Math.min(...r.v);
+  if(r.homeIdx>=0){const ab=r.v.filter((_,i)=>i!==r.homeIdx);r.abroad=mean(ab);r.homeScore=r.v[r.homeIdx];r.edge=r.homeScore-r.abroad}});
+const colMean=COUNTRIES.map((_,c)=>mean(R.map(r=>r.v[c])));
+const grand=mean(R.map(r=>r.mean));
+const short=n=>n; // names are already short
+const resid=(r,c)=>R[r].v[c]-R[r].mean-colMean[c]+grand;
+// taste profile of a country, with cuisine popularity removed
+const cProf=c=>R.map(r=>r.v[c]-r.mean);
+// profile of a cuisine, with country generosity removed
+const rProf=r=>R[r].v.map((x,c)=>x-colMean[c]);
+
+// ---------- COLOURS ----------
+const lerp=(a,b,t)=>a.map((x,i)=>Math.round(x+(b[i]-x)*t));
+const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const RED=hex('#e2635a'),YEL=hex('#f4e27c'),GRN=hex('#47a96b'),MID=hex('#f6f3ec');
+const rgb=a=>`rgb(${a})`;
+function rawCol(v){const t=Math.max(0,Math.min(1,(v-10)/89));return rgb(t<.5?lerp(RED,YEL,t*2):lerp(YEL,GRN,(t-.5)*2))}
+function divCol(v,m){const t=Math.max(-1,Math.min(1,v/m));return rgb(t<0?lerp(MID,RED,-t):lerp(MID,GRN,t))}
+const f1=x=>(x>0?'+':'')+Math.round(x);
+
+// ---------- TOOLTIP ----------
+const tip=document.getElementById('tip');
+function showTip(e,html){tip.innerHTML=html;tip.style.opacity=1;const w=tip.offsetWidth;let x=e.clientX+14;if(x+w>innerWidth-8)x=e.clientX-w-14;tip.style.left=x+'px';tip.style.top=(e.clientY+14)+'px'}
+function hideTip(){tip.style.opacity=0}
+
+// ---------- SVG HELPERS ----------
+const NS='http://www.w3.org/2000/svg';
+function S(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e}
+const esc=s=>String(s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const opts=(arr,sel)=>arr.map((x,i)=>`<option value="${i}"${i===sel?' selected':''}>${esc(x)}</option>`).join('');
+
+// horizontal bar chart: items {label,value,color,mark,tag,hl,tipHtml}
+function barChart(items,{max=100,min=0,labelW=120,rowH=22,fmt=v=>Math.round(v)}={}){
+  const W=700,pad=44,iw=W-labelW-pad,H=items.length*rowH+8;
+  const x=v=>labelW+(v-min)/(max-min)*iw;
+  let s=`<svg viewBox="0 0 ${W} ${H}">`;
+  if(min<0)s+=`<line x1="${x(0)}" x2="${x(0)}" y1="0" y2="${H}" stroke="var(--line)"/>`;
+  items.forEach((it,i)=>{
+    const y=i*rowH+4,x0=x(Math.min(0,min<0?0:min)),x1=x(it.value);
+    s+=`<g data-i="${i}" class="bar"><rect x="0" y="${y-2}" width="${W}" height="${rowH}" fill="transparent"/>`;
+    s+=`<text x="${labelW-8}" y="${y+rowH/2+3}" text-anchor="end" font-size="12.5" ${it.hl?'font-weight="700" style="fill:var(--acc)"':''}>${esc(it.label)}</text>`;
+    s+=`<rect x="${Math.min(x0,x1)}" y="${y+3}" width="${Math.max(1,Math.abs(x1-x0))}" height="${rowH-8}" rx="3" fill="${it.color}" ${it.hl?'stroke="var(--acc)" stroke-width="2"':''}/>`;
+    if(it.mark!=null)s+=`<line x1="${x(it.mark)}" x2="${x(it.mark)}" y1="${y+1}" y2="${y+rowH-3}" stroke="var(--fg)" stroke-width="2"/>`;
+    const tx=it.value>=0?x1+6:x1-6;
+    s+=`<text x="${tx}" y="${y+rowH/2+3}" font-size="11.5" text-anchor="${it.value>=0?'start':'end'}">${fmt(it.value)}${it.tag?` <tspan style="fill:var(--mut)">${esc(it.tag)}</tspan>`:''}</text></g>`;
+  });
+  return s+'</svg>';
+}
+function wireBars(root,items){
+  root.querySelectorAll('g.bar').forEach(g=>{const it=items[+g.dataset.i];if(!it.tipHtml)return;
+    g.addEventListener('mousemove',e=>showTip(e,it.tipHtml));g.addEventListener('mouseleave',hideTip)});
+}
+
+// ---------- STATE ----------
+const st={tab:'heat',mode:'raw',rowSort:'avg',colSort:'avg',country:COUNTRIES.indexOf('Japan'),cuisine:R.findIndex(r=>r.name==='Thai'),ca:COUNTRIES.indexOf('USA'),cb:COUNTRIES.indexOf('Japan'),cmode:'raw',cview:'raw',uview:'raw'};
+const TABS=[['heat','Heatmap'],['country','By country'],['cuisine','By cuisine'],['compare','Head-to-head'],['insights','Insights']];
+const main=document.getElementById('main');
+function drawTabs(){const n=document.getElementById('tabs');n.innerHTML='';TABS.forEach(([k,l])=>{const b=document.createElement('button');b.textContent=l;b.className=k===st.tab?'on':'';b.onclick=()=>{st.tab=k;drawTabs();render()};n.appendChild(b)})}
+
+// ---------- HEATMAP ----------
+const MODES={raw:['Raw %','% who like it, as published'],cuisine:['vs. cuisine avg','A cuisine’s score minus its own average: where is it loved more than elsewhere?'],country:['vs. country avg','Score minus that country’s average: a country’s relative favourites'],surprise:['Surprises','Removes both the cuisine’s overall appeal and the country’s general enthusiasm, leaving only what’s unexpected']};
+let hm=null;
+const CW=40,CH=26,LX=135,TY=112;
+function cellVal(r,c){const v=R[r].v[c];switch(st.mode){case'raw':return v;case'cuisine':return v-R[r].mean;case'country':return v-colMean[c];default:return resid(r,c)}}
+function order(){
+  const ro=[...Array(NR).keys()],co=[...Array(NC).keys()];
+  const rs=st.rowSort,cs=st.colSort;
+  if(rs==='avg')ro.sort((a,b)=>R[b].mean-R[a].mean);
+  else if(rs==='name')ro.sort((a,b)=>R[a].name.localeCompare(R[b].name));
+  else{const c=+rs.slice(4);ro.sort((a,b)=>cellVal(b,c)-cellVal(a,c))}
+  if(cs==='avg')co.sort((a,b)=>colMean[b]-colMean[a]);
+  else if(cs==='name')co.sort((a,b)=>COUNTRIES[a].localeCompare(COUNTRIES[b]));
+  else{const r=+cs.slice(4);co.sort((a,b)=>cellVal(r,b)-cellVal(r,a))}
+  return[ro,co];
+}
+function buildHeat(){
+  main.innerHTML=`<div class="card"><h2>Who likes what?</h2><div class="sub">Hover to focus a row and column. <b>Click a country</b> to sort cuisines by it, <b>click a cuisine</b> to sort countries by it.</div>
+  <div class="ctl"><span>Colour by</span><span id="modes"></span><span style="margin-left:auto">Sort</span><span id="sorts"></span></div>
+  <div class="hm"><svg id="hm" viewBox="0 0 ${LX+NC*CW+70} ${TY+NR*CH+44}"></svg></div>
+  <div class="legend" id="legend"></div><div class="sub" id="modeNote" style="margin:6px 0 0"></div></div>`;
+  const svg=document.getElementById('hm');
+  hm={svg,cells:[],rl:[],cl:[],ra:[],ca:[]};
+  for(let c=0;c<NC;c++){const g=S('g',{class:'mv'},svg);const t=S('text',{class:'lab',x:0,y:0},g);t.textContent=COUNTRIES[c];t.style.transform='rotate(-45deg)';t.style.transformOrigin='0 0';t.addEventListener('click',()=>{st.rowSort=st.rowSort==='col:'+c?'avg':'col:'+c;update()});hm.cl.push([g,t]);
+    const ga=S('g',{class:'mv'},svg);const a=S('text',{x:CW/2,y:TY+NR*CH+18,'text-anchor':'middle',style:'font-size:11px;fill:var(--mut)'},ga);hm.ca.push([ga,a])}
+  for(let r=0;r<NR;r++){const g=S('g',{class:'mv'},svg);const t=S('text',{class:'lab',x:LX-8,y:CH/2+4,'text-anchor':'end'},g);t.textContent=R[r].name;t.addEventListener('click',()=>{st.colSort=st.colSort==='row:'+r?'avg':'row:'+r;update()});hm.rl.push([g,t]);
+    const ga=S('g',{class:'mv'},svg);const a=S('text',{x:LX+NC*CW+8,y:CH/2+4,style:'font-size:11px;fill:var(--mut)'},ga);hm.ra.push([ga,a])}
+  S('text',{x:LX+NC*CW+8,y:TY-6,style:'font-size:11px;fill:var(--mut)'},svg).textContent='avg';
+  S('text',{x:LX-8,y:TY+NR*CH+18,'text-anchor':'end',style:'font-size:11px;fill:var(--mut)'},svg).textContent='country avg';
+  for(let r=0;r<NR;r++){hm.cells[r]=[];for(let c=0;c<NC;c++){
+    const g=S('g',{class:'cell mv'+(R[r].est.has(c)?' est':'')},svg);S('rect',{width:CW,height:CH,rx:4},g);S('text',{x:CW/2,y:CH/2+4,'text-anchor':'middle'},g);
+    g.addEventListener('mousemove',e=>{focus(r,c);cellTip(e,r,c)});g.addEventListener('mouseleave',()=>{svg.classList.remove('hov');svg.querySelectorAll('.on').forEach(x=>x.classList.remove('on'));hideTip()});
+    hm.cells[r][c]=g}}
+  hm.pos={};
+  const mb=document.getElementById('modes');Object.keys(MODES).forEach(k=>{const b=document.createElement('button');b.className='chip';b.textContent=MODES[k][0];b.dataset.k=k;b.onclick=()=>{st.mode=k;if(/^(col|row):/.test(st.rowSort+st.colSort)){}update()};mb.appendChild(b)});
+  const sb=document.getElementById('sorts');[['avg','By popularity'],['name','A–Z']].forEach(([k,l])=>{const b=document.createElement('button');b.className='chip';b.textContent=l;b.dataset.k=k;b.onclick=()=>{st.rowSort=k;st.colSort=k;update()};sb.appendChild(b)});
+}
+function focus(r,c){const svg=hm.svg;svg.querySelectorAll('.on').forEach(x=>x.classList.remove('on'));svg.classList.add('hov');
+  for(let i=0;i<NC;i++)hm.cells[r][i].classList.add('on');for(let i=0;i<NR;i++)hm.cells[i][c].classList.add('on')}
+function cellTip(e,r,c){const R_=R[r],v=R_.v[c];
+  const home=R_.homeIdx===c?'<br><i>home turf</i>':'';
+  showTip(e,`<b>${esc(R_.name)} cuisine in ${esc(COUNTRIES[c])}</b><br>${v}% who tried it like it${home}<br>${esc(R_.name)} avg ${Math.round(R_.mean)} · ${esc(COUNTRIES[c])} avg ${Math.round(colMean[c])}<br>Surprise factor: ${f1(resid(r,c))}${R_.est.has(c)?'<br><i>estimated cell</i>':''}`)}
+function update(){
+  const [ro,co]=order();
+  const rpos=[],cpos=[];ro.forEach((r,i)=>rpos[r]=i);co.forEach((c,i)=>cpos[c]=i);
+  const vals=[];let m=1;
+  for(let r=0;r<NR;r++){vals[r]=[];for(let c=0;c<NC;c++){const v=cellVal(r,c);vals[r][c]=v;if(st.mode!=='raw')m=Math.max(m,Math.abs(v))}}
+  m=st.mode==='raw'?1:Math.ceil(m);
+  for(let r=0;r<NR;r++)for(let c=0;c<NC;c++){const g=hm.cells[r][c];g.style.transform=`translate(${LX+cpos[c]*CW}px,${TY+rpos[r]*CH}px)`;
+    g.firstChild.style.fill=st.mode==='raw'?rawCol(vals[r][c]):divCol(vals[r][c],m);
+    g.lastChild.textContent=st.mode==='raw'?vals[r][c]:Math.round(vals[r][c])}
+  for(let c=0;c<NC;c++){const [g,t]=hm.cl[c];g.style.transform=`translate(${LX+cpos[c]*CW+CW/2}px,${TY-8}px)`;t.classList.toggle('sel',st.rowSort==='col:'+c);
+    const [ga,a]=hm.ca[c];ga.style.transform=`translate(${LX+cpos[c]*CW}px,0px)`;a.textContent=Math.round(colMean[c])}
+  for(let r=0;r<NR;r++){const [g,t]=hm.rl[r];g.style.transform=`translate(0px,${TY+rpos[r]*CH}px)`;t.classList.toggle('sel',st.colSort==='row:'+r);
+    const [ga,a]=hm.ra[r];ga.style.transform=`translate(0px,${TY+rpos[r]*CH}px)`;a.textContent=Math.round(R[r].mean)}
+  document.querySelectorAll('#modes .chip').forEach(b=>b.classList.toggle('on',b.dataset.k===st.mode));
+  document.querySelectorAll('#sorts .chip').forEach(b=>b.classList.toggle('on',b.dataset.k===st.rowSort&&b.dataset.k===st.colSort));
+  document.getElementById('modeNote').textContent=MODES[st.mode][1]+(st.rowSort.startsWith('col:')?` · Rows sorted by ${COUNTRIES[+st.rowSort.slice(4)]}.`:'')+(st.colSort.startsWith('row:')?` · Columns sorted by ${R[+st.colSort.slice(4)].name}.`:'');
+  document.getElementById('legend').innerHTML=st.mode==='raw'?`<span>10%</span><i style="background:linear-gradient(90deg,${rgb(RED)},${rgb(YEL)},${rgb(GRN)})"></i><span>99%</span>`:`<span>−${m}</span><i style="background:linear-gradient(90deg,${rgb(RED)},${rgb(MID)},${rgb(GRN)})"></i><span>+${m} points</span>`;
+}
+
+// ---------- COUNTRY TAB ----------
+function renderCountry(){
+  const c=st.country;
+  main.innerHTML=`<div class="card"><h2>A country’s palate</h2><div class="ctl"><select id="sel">${opts(COUNTRIES,c)}</select>
+  <button class="chip" data-v="raw">% who like it</button><button class="chip" data-v="rel">vs. world average</button></div>
+  <div class="stats" id="stats"></div><div id="chart"></div>
+  <div class="legend">Black tick = the average across all 24 countries.</div></div>
+  <div class="card"><h2>Taste twins</h2><div class="sub">Countries whose relative preferences (after removing each cuisine’s overall popularity) look most and least like ${esc(COUNTRIES[c])}’s.</div><div class="grid2" id="twins"></div></div>`;
+  document.getElementById('sel').onchange=e=>{st.country=+e.target.value;renderCountry()};
+  main.querySelectorAll('.chip').forEach(b=>{b.classList.toggle('on',b.dataset.v===st.cview);b.onclick=()=>{st.cview=b.dataset.v;renderCountry()}});
+  const rel=st.cview==='rel';
+  const items=R.map((r,i)=>({r,i,v:r.v[c]})).sort((a,b)=>rel?(b.v-b.r.mean)-(a.v-a.r.mean):b.v-a.v).map(({r,i,v})=>{
+    const d=v-r.mean;return{label:r.name,value:rel?d:v,color:rel?divCol(d,35):rawCol(v),mark:rel?null:r.mean,tag:rel?`(${v}%)`:`${f1(d)} vs avg`,hl:r.homeIdx===c,
+    tipHtml:`<b>${esc(r.name)}</b>: ${v}% in ${esc(COUNTRIES[c])}<br>World avg ${Math.round(r.mean)}% (${f1(d)})${r.homeIdx===c?'<br><i>their home cuisine</i>':''}`}});
+  const best=[...R].sort((a,b)=>b.v[c]-a.v[c]);
+  const over=[...R].sort((a,b)=>(b.v[c]-b.mean)-(a.v[c]-a.mean));
+  document.getElementById('stats').innerHTML=`<div><div class="big">${Math.round(colMean[c])}%</div><span>average approval · rank ${[...colMean].sort((a,b)=>b-a).indexOf(colMean[c])+1} of 24</span></div>
+   <div><div class="big">${esc(best[0].name)}</div><span>favourite (${best[0].v[c]}%)</span></div>
+   <div><div class="big">${esc(over[0].name)}</div><span>most loved vs. world (${f1(over[0].v[c]-over[0].mean)})</span></div>
+   <div><div class="big">${esc(over[NR-1].name)}</div><span>least loved vs. world (${f1(over[NR-1].v[c]-over[NR-1].mean)})</span></div>`;
+  const ch=document.getElementById('chart');
+  ch.innerHTML=barChart(items,rel?{min:-50,max:50}:{});wireBars(ch,items);
+  const base=cProf(c);const sims=COUNTRIES.map((n,j)=>({n,r:j===c?null:pearson(base,cProf(j))})).filter(x=>x.r!=null).sort((a,b)=>b.r-a.r);
+  const li=a=>`<ol class="rank">${a.map(x=>`<li>${esc(x.n)} <b>${x.r.toFixed(2)}</b></li>`).join('')}</ol>`;
+  document.getElementById('twins').innerHTML=`<div><b>Most alike</b>${li(sims.slice(0,5))}</div><div><b>Least alike</b>${li(sims.slice(-5).reverse())}</div>`;
+}
+
+// ---------- CUISINE TAB ----------
+function renderCuisine(){
+  const r=st.cuisine,R_=R[r];
+  main.innerHTML=`<div class="card"><h2>A cuisine’s reach</h2><div class="ctl"><select id="sel">${opts(R.map(x=>x.name),r)}</select>
+  <button class="chip" data-v="raw">% who like it</button><button class="chip" data-v="rel">vs. country average</button></div>
+  <div class="stats" id="stats"></div><div id="chart"></div>
+  <div class="legend">Black tick = that country’s average approval across all cuisines. ${R_.home?`Outlined bar = ${esc(R_.home)}, its home.`:''}</div></div>
+  <div class="card"><h2>Cuisines liked by the same people</h2><div class="sub">Cuisines with the most and least similar geography of fans (correlation across countries, after accounting for how generous each country is).</div><div class="grid2" id="twins"></div></div>`;
+  document.getElementById('sel').onchange=e=>{st.cuisine=+e.target.value;renderCuisine()};
+  main.querySelectorAll('.chip').forEach(b=>{b.classList.toggle('on',b.dataset.v===st.uview);b.onclick=()=>{st.uview=b.dataset.v;renderCuisine()}});
+  const rel=st.uview==='rel';
+  const items=COUNTRIES.map((n,c)=>({n,c,v:R_.v[c]})).sort((a,b)=>rel?(b.v-colMean[b.c])-(a.v-colMean[a.c]):b.v-a.v).map(({n,c,v})=>{const d=v-colMean[c];
+    return{label:n,value:rel?d:v,color:rel?divCol(d,35):rawCol(v),mark:rel?null:colMean[c],tag:rel?`(${v}%)`:`${f1(d)} vs avg`,hl:R_.homeIdx===c,
+    tipHtml:`<b>${esc(n)}</b>: ${v}% like ${esc(R_.name)}<br>${esc(n)} averages ${Math.round(colMean[c])}% (${f1(d)})${R_.homeIdx===c?'<br><i>home country</i>':''}`}});
+  const top=[...COUNTRIES.keys()].sort((a,b)=>R_.v[b]-R_.v[a]),topRel=[...COUNTRIES.keys()].sort((a,b)=>(R_.v[b]-colMean[b])-(R_.v[a]-colMean[a]));
+  document.getElementById('stats').innerHTML=`<div><div class="big">${Math.round(R_.mean)}%</div><span>average approval · rank ${[...R].map(x=>x.mean).sort((a,b)=>b-a).indexOf(R_.mean)+1} of ${NR}</span></div>
+   <div><div class="big">${esc(COUNTRIES[top[0]])}</div><span>biggest fan (${R_.v[top[0]]}%)</span></div>
+   <div><div class="big">${esc(COUNTRIES[topRel[NC-1]])}</div><span>coolest vs. its norm (${f1(R_.v[topRel[NC-1]]-colMean[topRel[NC-1]])})</span></div>
+   <div><div class="big">±${R_.sd.toFixed(0)}</div><span>spread between countries${R_.home?` · travels ${R_.edge>0?'with a '+Math.round(R_.edge)+'-pt home edge':'well'}`:''}</span></div>`;
+  const ch=document.getElementById('chart');ch.innerHTML=barChart(items,rel?{min:-50,max:50}:{});wireBars(ch,items);
+  const base=rProf(r);const sims=R.map((x,j)=>({n:x.name,r:j===r?null:pearson(base,rProf(j))})).filter(x=>x.r!=null).sort((a,b)=>b.r-a.r);
+  const li=a=>`<ol class="rank">${a.map(x=>`<li>${esc(x.n)} <b>${x.r.toFixed(2)}</b></li>`).join('')}</ol>`;
+  document.getElementById('twins').innerHTML=`<div><b>Fans overlap with</b>${li(sims.slice(0,5))}</div><div><b>Fans diverge from</b>${li(sims.slice(-5).reverse())}</div>`;
+}
+
+// ---------- COMPARE TAB ----------
+function renderCompare(){
+  main.innerHTML=`<div class="card"><h2>Head-to-head</h2><div class="sub">Each dot is a cuisine. Above the diagonal, the vertical country likes it more.</div>
+  <div class="ctl"><select id="a">${opts(COUNTRIES,st.ca)}</select><span>(x) vs</span><select id="b">${opts(COUNTRIES,st.cb)}</select><span>(y)</span>
+  <button class="chip" data-v="raw">% who like it</button><button class="chip" data-v="rel">vs. cuisine avg</button></div>
+  <div class="stats" id="stats"></div><div id="plot"></div></div>`;
+  document.getElementById('a').onchange=e=>{st.ca=+e.target.value;renderCompare()};document.getElementById('b').onchange=e=>{st.cb=+e.target.value;renderCompare()};
+  main.querySelectorAll('.chip').forEach(b=>{b.classList.toggle('on',b.dataset.v===st.cmode);b.onclick=()=>{st.cmode=b.dataset.v;renderCompare()}});
+  const rel=st.cmode==='rel',A=st.ca,B=st.cb;
+  const pts=R.map((r,i)=>({r,x:rel?r.v[A]-r.mean:r.v[A],y:rel?r.v[B]-r.mean:r.v[B]}));
+  const lo=rel?-45:0,hi=rel?45:100;
+  const W=720,H=620,m={l:56,r:20,t:14,b:46},sx=v=>m.l+(v-lo)/(hi-lo)*(W-m.l-m.r),sy=v=>H-m.b-(v-lo)/(hi-lo)*(H-m.t-m.b);
+  let s=`<svg viewBox="0 0 ${W} ${H}">`;
+  const ticks=rel?[-40,-20,0,20,40]:[0,20,40,60,80,100];
+  ticks.forEach(t=>{s+=`<line x1="${sx(t)}" x2="${sx(t)}" y1="${m.t}" y2="${H-m.b}" stroke="var(--line)"/><line x1="${m.l}" x2="${W-m.r}" y1="${sy(t)}" y2="${sy(t)}" stroke="var(--line)"/><text x="${sx(t)}" y="${H-m.b+16}" font-size="11" text-anchor="middle" style="fill:var(--mut)">${t}</text><text x="${m.l-8}" y="${sy(t)+4}" font-size="11" text-anchor="end" style="fill:var(--mut)">${t}</text>`});
+  s+=`<line x1="${sx(lo)}" y1="${sy(lo)}" x2="${sx(hi)}" y2="${sy(hi)}" stroke="var(--mut)" stroke-dasharray="5 4"/>`;
+  s+=`<text x="${(m.l+W-m.r)/2}" y="${H-8}" text-anchor="middle" font-size="13" font-weight="600">${esc(COUNTRIES[A])}${rel?' (vs. cuisine avg)':' (% like)'}</text><text transform="translate(14 ${(m.t+H-m.b)/2}) rotate(-90)" text-anchor="middle" font-size="13" font-weight="600">${esc(COUNTRIES[B])}${rel?' (vs. cuisine avg)':' (% like)'}</text>`;
+  pts.forEach((p,i)=>{s+=`<g class="pt" data-i="${i}"><circle cx="${sx(p.x)}" cy="${sy(p.y)}" r="6" fill="${rel?divCol(p.y-p.x,30):rawCol(p.r.mean)}" stroke="var(--fg)" stroke-width="1"/><text x="${sx(p.x)+9}" y="${sy(p.y)+4}" font-size="10.5">${esc(p.r.name)}</text></g>`});
+  s+='</svg>';document.getElementById('plot').innerHTML=s;
+  document.querySelectorAll('#plot .pt').forEach(g=>{const p=pts[+g.dataset.i];g.addEventListener('mousemove',e=>showTip(e,`<b>${esc(p.r.name)}</b><br>${esc(COUNTRIES[A])}: ${p.r.v[A]}% · ${esc(COUNTRIES[B])}: ${p.r.v[B]}%`));g.addEventListener('mouseleave',hideTip)});
+  const raw=pearson(R.map(r=>r.v[A]),R.map(r=>r.v[B])),adj=pearson(cProf(A),cProf(B));
+  const diff=[...R].sort((a,b)=>(b.v[B]-b.v[A])-(a.v[B]-a.v[A]));
+  document.getElementById('stats').innerHTML=`<div><div class="big">${raw.toFixed(2)}</div><span>raw correlation</span></div><div><div class="big">${adj.toFixed(2)}</div><span>taste similarity (popularity removed)</span></div>
+   <div><div class="big">${esc(diff[0].name)}</div><span>${esc(COUNTRIES[B])} over ${esc(COUNTRIES[A])} by ${diff[0].v[B]-diff[0].v[A]}</span></div>
+   <div><div class="big">${esc(diff[NR-1].name)}</div><span>${esc(COUNTRIES[A])} over ${esc(COUNTRIES[B])} by ${diff[NR-1].v[A]-diff[NR-1].v[B]}</span></div>`;
+}
+
+// ---------- INSIGHTS TAB ----------
+function renderInsights(){
+  const top=(arr,n,fn,fmt,asc)=>[...arr].sort((a,b)=>asc?fn(a)-fn(b):fn(b)-fn(a)).slice(0,n);
+  const list=(arr,label,val)=>`<ol class="rank">${arr.map(x=>`<li>${label(x)} <b>${val(x)}</b></li>`).join('')}</ol>`;
+  const homed=R.filter(r=>r.homeIdx>=0);
+  const pairs=[];for(let a=0;a<NC;a++)for(let b=a+1;b<NC;b++)pairs.push({a,b,r:pearson(cProf(a),cProf(b))});pairs.sort((x,y)=>y.r-x.r);
+  const cells=[];for(let r=0;r<NR;r++)for(let c=0;c<NC;c++)if(R[r].homeIdx!==c)cells.push({r,c,d:resid(r,c)});cells.sort((x,y)=>y.d-x.d);
+  const cl=x=>`${esc(R[x.r].name)} in ${esc(COUNTRIES[x.c])} <span class="m">(${R[x.r].v[x.c]}%)</span>`;
+  const pn=x=>`${esc(COUNTRIES[x.a])} &amp; ${esc(COUNTRIES[x.b])}`;
+  main.innerHTML=`<div class="grid2">
+  <div class="card"><h2>Crowd-pleasers</h2><div class="sub">Highest <i>lowest</i> score anywhere: no country dislikes them.</div>${list(top(R,6,r=>r.min,0),r=>esc(r.name),r=>r.min+'%')}</div>
+  <div class="card"><h2>Most polarising</h2><div class="sub">Biggest spread between countries.</div>${list(top(R,6,r=>r.sd),r=>esc(r.name),r=>'±'+r.sd.toFixed(0))}</div>
+  <div class="card"><h2>Best travellers</h2><div class="sub">Average approval outside the home country.</div>${list(top(homed,6,r=>r.abroad),r=>esc(r.name),r=>Math.round(r.abroad)+'%')}</div>
+  <div class="card"><h2>Biggest home-field advantage</h2><div class="sub">Approval at home minus abroad.</div>${list(top(homed,6,r=>r.edge),r=>esc(r.name),r=>'+'+Math.round(r.edge))}</div>
+  <div class="card"><h2>Most generous countries</h2><div class="sub">Average approval across all cuisines.</div>${list(top(COUNTRIES.map((n,i)=>({n,m:colMean[i]})),6,x=>x.m),x=>esc(x.n),x=>Math.round(x.m)+'%')}</div>
+  <div class="card"><h2>Toughest crowds</h2><div class="sub">Lowest average approval.</div>${list(top(COUNTRIES.map((n,i)=>({n,m:colMean[i]})),6,x=>x.m,0,true),x=>esc(x.n),x=>Math.round(x.m)+'%')}</div>
+  <div class="card"><h2>Culinary soulmates</h2><div class="sub">Country pairs with the most similar tastes.</div>${list(pairs.slice(0,6),pn,x=>x.r.toFixed(2))}</div>
+  <div class="card"><h2>Culinary opposites</h2><div class="sub">Country pairs with the least similar tastes.</div>${list(pairs.slice(-6).reverse(),pn,x=>x.r.toFixed(2))}</div>
+  <div class="card"><h2>Biggest over-performers</h2><div class="sub">Far more love than the cuisine and country predict (home turf excluded).</div>${list(cells.slice(0,8),cl,x=>`<span class="pos">${f1(x.d)}</span>`)}</div>
+  <div class="card"><h2>Biggest under-performers</h2><div class="sub">Far less love than expected.</div>${list(cells.slice(-8).reverse(),cl,x=>`<span class="neg">${f1(x.d)}</span>`)}</div>
+  </div>`;
+}
+
+function render(){hideTip();
+  if(st.tab==='heat'){buildHeat();update()}
+  else if(st.tab==='country')renderCountry();
+  else if(st.tab==='cuisine')renderCuisine();
+  else if(st.tab==='compare')renderCompare();
+  else renderInsights();
+}
+drawTabs();render();
+</script>
+</body>
+</html>
